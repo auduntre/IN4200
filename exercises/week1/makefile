@@ -22,5 +22,8 @@ temp_measure: temp_measure.c
 	$(CC) -o $@ $^ $(CFLAGS)
 
 
+smooth2D: smooth2D.c
+	$(CC) -o $@ $^ $(CFLAGS) -lopenmp
+
 clean:
 	rm limit array_allocation matrix_assigning 3Dinto1D temp_measure
