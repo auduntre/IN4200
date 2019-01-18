@@ -28,10 +28,6 @@ int main (int argc, char **argv)
     }
 
     for (ijk = 0; ijk < n_x*n_y*n_z; ijk++) {
-        i = ijk / (n_y * n_z);
-        j = ijk / n_z - i * n_y;
-        k = ijk - (i * n_y  + j) * n_z;
-
         //printf("i = %d, j = %d, k = %d \n", i, j, k);
         if (A_storage[ijk] != ijk) {
             printf("Not correctly allocated\n");

@@ -18,5 +18,9 @@ matrix_assigning: matrix_assigning.c
 	$(CC) -o $@ $^ $(CFLAGS)
 
 
+temp_measure: temp_measure.c 
+	$(CC) -o $@ $^ $(CFLAGS)
+
+
 clean:
-	rm limit array_allocation matrix_assigning 3Dinto1D
+	rm limit array_allocation matrix_assigning 3Dinto1D temp_measure
