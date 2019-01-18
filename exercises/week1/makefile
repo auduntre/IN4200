@@ -1,0 +1,22 @@
+CC = gcc
+CFLAGS= -lm -O3 
+
+
+limit: limit.c
+	$(CC) -o $@ $^ $(CFLAGS)
+
+
+array_allocation: array_allocation_1D.c
+	$(CC) -o $@ $^ $(CFLAGS)
+
+
+matrix_assigning: matrix_assigning.c
+	$(CC) -o $@ $^ $(CFLAGS)
+
+
+3Dinto1D: 3Dinto1D.c
+	$(CC) -o $@ $^ $(CFLAGS)
+
+
+clean:
+	rm limit array_allocation matrix_assigning 3Dinto1D
