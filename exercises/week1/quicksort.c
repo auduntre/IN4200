@@ -39,6 +39,7 @@ int main (int argc, char **argv)
     permution_sort(arr2, perm, 0, n);
     print_array(arr2, n);
     print_array_perm(arr2, perm, n);
+    print_array(perm, n);
 
     //free(arr);
     return 0;
@@ -110,8 +111,9 @@ void sort_perm (int arr[], int perm[], int beg, int end)
             }
 
             swap(&perm[--l], &perm[beg]);
-            sort_perm(arr, perm, beg, l);
-            sort_perm(arr, perm, r, end);
+            printf("%d, %d, %d, %d\n", perm[beg], perm[l], perm[r], perm[end]);
+            sort_perm(arr, perm, perm[beg], perm[l]);
+            sort_perm(arr, perm, perm[r], end);
         }
     } 
 }
