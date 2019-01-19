@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS= -lm -O3 
+CFLAGS= -lm -O3
 
 
 limit: limit.c
@@ -23,7 +23,12 @@ temp_measure: temp_measure.c
 
 
 smooth2D: smooth2D.c
-	$(CC) -o $@ $^ $(CFLAGS) -lopenmp
+	$(CC) -o $@ $^ $(CFLAGS) -fopenmp
+
+
+quicksort: quicksort.c
+	$(CC) -o $@ $^ $(CFLAGS)
+
 
 clean:
 	rm limit array_allocation matrix_assigning 3Dinto1D temp_measure
