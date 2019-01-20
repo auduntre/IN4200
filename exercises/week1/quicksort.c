@@ -109,12 +109,11 @@ void sort_perm (int arr[], int perm[], int beg, int end)
             else {
                 swap(&perm[l], &perm[--r]);
             }
-
-            swap(&perm[--l], &perm[beg]);
-            printf("%d, %d, %d, %d\n", perm[beg], perm[l], perm[r], perm[end]);
-            sort_perm(arr, perm, perm[beg], perm[l]);
-            sort_perm(arr, perm, perm[r], end);
         }
+        
+        swap(&perm[--l], &perm[beg]);
+        sort_perm(arr, perm, beg, l);
+        sort_perm(arr, perm, r, end);
     } 
 }
 

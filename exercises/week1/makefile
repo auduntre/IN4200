@@ -31,4 +31,4 @@ quicksort: quicksort.c
 
 
 clean:
-	rm limit array_allocation matrix_assigning 3Dinto1D temp_measure
+	rm limit array_allocation matrix_assigning 3Dinto1D temp_measure smooth2D quicksort
