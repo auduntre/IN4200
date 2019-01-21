@@ -69,15 +69,38 @@ void read_test_files (int n)
     FILE *infile_ASCII;
 
     int *invalues_binary = (int *) malloc (n * sizeof(int));
+    int *invalues_ASCII = (int *) malloc (n * sizeof(int));
 
+    clock_t start, end;
+    
     infile_binary = fopen("test.bin", "rb");
+    infile_ASCII = fopen("test.txt", "r");
 
+    start = clock();
     fread(invalues_binary, sizeof(int), n, infile_binary);
+    end = clock();
+    print_elapsed("read binary", start, end);
 
-    printf("%f", invalues_binary[n-1]);
+    start = clock();
+    for (int i = 0; i < n; i++) {
+        fscanf(infile_ASCII, "%d ", &invalues_ASCII[i]);
+    }
+    end = clock();
+    print_elapsed("read ASCII", start, end);
+
+    for (int i = 0; i < n; i++) {
+        if (invalues_ASCII[i] != invalues_binary[i]) {
+            printf("ERROR IN READING OR WRITING AS ASCII AND BINARY ");
+            printf("DOESNT GIVE THE SAME VALUES.\n");
+            break;
+        }
+    }
 
     free(invalues_binary);
+    free(invalues_ASCII);
+
     fclose(infile_binary);
+    fclose(infile_ASCII);
 }
 
 
