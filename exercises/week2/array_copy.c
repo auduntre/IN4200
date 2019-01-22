@@ -27,7 +27,7 @@ int main (int argc, char **argv)
     }
 
     start = clock();
-    memcpy(b, a, sizeof(a));
+    memcpy(b, a, n * sizeof(double));
     end = clock();
 
     printf("TIME MEMCPY: %f sec\n", (double) (end - start) / CLOCKS_PER_SEC );
@@ -40,7 +40,7 @@ int main (int argc, char **argv)
 
     printf("TIME MANUAL COPY: %f sec\n", (double) (end - start) / CLOCKS_PER_SEC);
 
-    printf("b[0] = %f, c[0] = %f, a[0] = %f\n", b[0], c[0], a[0]);
+    printf("b[n/2] = %f, c[n/2] = %f, a[n/2] = %f\n", b[n/2], c[n/2], a[n/2]);
 
     free(a);
     free(b);
