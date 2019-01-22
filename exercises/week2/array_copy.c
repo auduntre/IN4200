@@ -13,6 +13,7 @@ int main (int argc, char **argv)
         n = atoi(argv[1]);
     }
 
+    size_t array_size = n * sizeof(double);
     clock_t start, end;
     double elapsed;
 
@@ -27,7 +28,7 @@ int main (int argc, char **argv)
     }
 
     start = clock();
-    memcpy(b, a, n * sizeof(double));
+    memcpy(b, a, array_size);
     end = clock();
 
     printf("TIME MEMCPY: %f sec\n", (double) (end - start) / CLOCKS_PER_SEC );
