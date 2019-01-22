@@ -10,10 +10,10 @@
 int main (int argc, char **argv)
 {
     void free3D (double ***A, int nx, int ny);
-    double *** double_malloc3D (int nx, int ny, int nz);
+    double *** double_malloc3D (double *A_storage, int nx, int ny, int nz);
     void print_array3D (char *Arrname, double ***Arr, int nx, int ny, int nz);
     
-    double *** smoothing_iterator3D (double ***u, double ***v, int nx, int ny, 
+    void smoothing_iterator3D (double ***u, double ***v, int nx, int ny, 
                                int nz, int iterations);
 
     unsigned int ns[NNVALUES];
@@ -31,10 +31,16 @@ int main (int argc, char **argv)
     unsigned int ny = ns[1];
     unsigned int nz = ns[2];
     unsigned int iterations = ns[3];
-  
+ 
+    clock_t start, end;
+    double FLOP, elapased;
+
     // Allocation of memory
-    double ***v = double_malloc3D(nx, ny, nz);
-    double ***u = double_malloc3D(nx, ny, nz);
+    double *v_storage;
+    double *u_storage;
+
+    double ***v = double_malloc3D(v_storage, nx, ny, nz);
+    double ***u = double_malloc3D(u_storage, nx, ny, nz);
     
     // Assignmnet of values
     double dnm = (nx - 1.0) * (ny - 1.0) * (nz - 1.0);
@@ -47,15 +53,25 @@ int main (int argc, char **argv)
         }
     }
 
-    v = smoothing_iterator3D(u, v, nx, ny, nz, iterations);
+    start = clock();
+    smoothing_iterator3D(u, v, nx, ny, nz, iterations);
+    end = clock();
+
 
     if (nx * ny * nz <= 1000) {
         print_array3D("u", u, nx, ny, nz);
         print_array3D("v", v, nx, ny, nz);
     }
 
+    elapased = (double) (end - start) / CLOCKS_PER_SEC;
+    FLOP = 9 * nx * ny * nz * iterations; 
+    printf("GFLOPS = %.4f\n", 1.E-9 * FLOP / elapased);
+
     free3D(u, nx, ny);
     free3D(v, nx, ny);
+
+    free(v_storage);
+    free(u_storage);
     return 0;
 }
 
@@ -63,24 +79,23 @@ int main (int argc, char **argv)
 void free3D (double ***A, int nx, int ny)
 {
     for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            free(A[i][j]);
-        }
         free(A[i]);
     }
     free(A);
 }
 
 
-double *** double_malloc3D (int nx, int ny, int nz)
+double *** double_malloc3D (double *A_storage, int nx, int ny, int nz)
 {
+    A_storage = (double *) malloc (nx * ny * nz * sizeof(double));
     double ***A = (double ***) malloc (nx * sizeof(double **));
     
     for (int i = 0; i < nx; i++) {
         A[i] = (double **) malloc (ny * sizeof(double *));
 
         for (int j = 0; j < ny; j++) {
-            A[i][j] = (double *) malloc (nz * sizeof(double));
+            A[i][j] = &(A_storage[i*ny*nz + j*nz]);
+                // = (double *) malloc (nz * sizeof(double));
         }
     }
 
@@ -88,7 +103,7 @@ double *** double_malloc3D (int nx, int ny, int nz)
 }
 
 
-double *** smooth3D (double ***u, double ***v, int nx, int ny, int nz)
+void smooth3D (double ***u, double ***v, int nx, int ny, int nz)
 {
     /* u[i][j][k] = 
      *              v[i][j][k] + (v[i-1][j][k] + v[i][j-1][k] + v[i][j][k-1]
@@ -100,41 +115,39 @@ double *** smooth3D (double ***u, double ***v, int nx, int ny, int nz)
      */
     
     int i, j, k;
-    
+    const double c = 1.0 / 6.0;
+    const double q = 6.0;
+
     // smoothing of v into u
     for (i = 1; i < (nx - 1); i++) {
         for (j = 1; j < (ny - 1); j++) {
             for (k = 1; k < (nz - 1); k++) {
-                u[i][j][k] = v[i][j][k] + (v[i-1][j][k] + v[i][j-1][k]
-                                           + v[i][j][k+1] - 6 * v[i][j][k]
-                                           + v[i-1][j][k] + v[i][j+1][k]
-                                           + v[i][j][k+1]) / 6.0;
+                u[i][j][k] = v[i][j][k] + c * (v[i-1][j][k] + v[i][j-1][k]
+                                            + v[i][j][k+1] - q * v[i][j][k]
+                                            + v[i-1][j][k] + v[i][j+1][k]
+                                            + v[i][j][k+1]);
             }
         }
     }
-
-    return u;
 }
 
 
-double *** smoothing_iterator3D (double ***u, double ***v, int nx, int ny,
+void smoothing_iterator3D (double ***u, double ***v, int nx, int ny,
                                  int nz, int iterations)
 {
-    double *** smooth3D (double ***u, double ***v, int nx, int ny, int nz);
-    void copy_array3D (double ***u, double ***v, int nx, int ny, int nz);
+    void smooth3D (double ***u, double ***v, int nx, int ny, int nz);
+    void copy_array3D (double ***v, double ***u, int nx, int ny, int nz);
 
     unsigned int iter = 0;
 
-    copy_array3D(v, u, nx, ny, nz);   
+    copy_array3D(u, v, nx, ny, nz);   
     
     while (iter < iterations) {
-        u = smooth3D(u, v, nx, ny, nz);
-        copy_array3D(u, v, nx, ny, nz);   
+        smooth3D(u, v, nx, ny, nz);
+        copy_array3D(v, u, nx, ny, nz);   
         // set v = u for next iteration 
         iter++;
     }
-
-    return v;
 }
 
 
@@ -156,13 +169,14 @@ void print_array3D (char *Arrname, double ***Arr, int nx, int ny, int nz)
 }
 
 
-void copy_array3D (double ***u, double ***v, int nx, int ny, int nz)
+void copy_array3D (double ***v, double ***u, int nx, int ny, int nz)
 {
+    memcpy(v, u, nx * ny * nz * sizeof(double));;
+    /*
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            for (int k = 0; k < nz; k++) {
-                v[i][j][k] = u[i][j][k];
-            }
+            memcpy(v[i][j], u[i][j], nz * sizeof(double));
         }
     }
+    */
 }

@@ -1,0 +1,21 @@
+                nx = 100            | nx = 10
+                ny = 100            | ny = 10
+                nz = 100            | nz = 10
+                iterations = 1000   | iterations = 100000
+
+version 1:
+    UIO:        0.095 GFLOPS        | 3.031 GFLOPS
+    LAPTOP:
+    DESKTOP:
+
+version 2:
+    UIO:        0.095 GFLOPS        | 3.10 GFLOPS
+
+version 3:
+    UIO:        0.095 GFLOPS        | 3.90 GFLOPS 
+
+version 4:
+    UIO:        0.142 GFLOPS        | 5.60 GFLOPS
+
+version 5:
+    UIO:        SEG FAULT           | 6.45 GFLOPS 
