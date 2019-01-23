@@ -78,15 +78,19 @@ int main (int argc, char **argv)
 
 void free3D (double ***A, int nx, int ny)
 {
+    printf("Freeing 3D Array ...");
+    
     for (int i = 0; i < nx; i++) {
         free(A[i]);
     }
     free(A);
+    printf("DONE.\n");
 }
 
 
 double *** double_malloc3D (double *A_storage, int nx, int ny, int nz)
 {
+    printf("Allocating memory to 3D array ...");
     A_storage = (double *) malloc (nx * ny * nz * sizeof(double));
     double ***A = (double ***) malloc (nx * sizeof(double **));
     
@@ -99,6 +103,7 @@ double *** double_malloc3D (double *A_storage, int nx, int ny, int nz)
         }
     }
 
+    printf("DONE\n");
     return A;
 }
 
@@ -140,14 +145,18 @@ void smoothing_iterator3D (double ***u, double ***v, int nx, int ny,
 
     unsigned int iter = 0;
 
+    //printf("Copying v array into u to get correct boundaries ...");
     copy_array3D(u, v, nx, ny, nz);   
-    
+    //printf("DONE.\n");
+
+    //printf("Smoothing for %d itearions ...", iterations);
     while (iter < iterations) {
         smooth3D(u, v, nx, ny, nz);
         copy_array3D(v, u, nx, ny, nz);   
         // set v = u for next iteration 
         iter++;
     }
+    //printf("DONE.\n");
 }
 
 
@@ -171,12 +180,11 @@ void print_array3D (char *Arrname, double ***Arr, int nx, int ny, int nz)
 
 void copy_array3D (double ***v, double ***u, int nx, int ny, int nz)
 {
-    memcpy(v, u, nx * ny * nz * sizeof(double));;
-    /*
+    int array_size = ny * sizeof(double);
+
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
-            memcpy(v[i][j], u[i][j], nz * sizeof(double));
+            memcpy(v[i][j], u[i][j], array_size);
         }
     }
-    */
 }

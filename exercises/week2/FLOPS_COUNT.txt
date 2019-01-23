@@ -15,7 +15,10 @@ version 3:
     UIO:        0.095 GFLOPS        | 3.90 GFLOPS 
 
 version 4:
-    UIO:        0.142 GFLOPS        | 5.60 GFLOPS
+    UIO:        0.14 GFLOPS         | 5.60 GFLOPS
 
 version 5:
-    UIO:        SEG FAULT           | 6.45 GFLOPS 
+    UIO:        SEG FAULT           | 6.45 GFLOPS
+
+version 6:
+    UIO         0.29 GFLOPS         | 6.00 GFLOPS
