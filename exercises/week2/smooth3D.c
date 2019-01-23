@@ -142,6 +142,7 @@ void smoothing_iterator3D (double ***u, double ***v, int nx, int ny,
 {
     void smooth3D (double ***u, double ***v, int nx, int ny, int nz);
     void copy_array3D (double ***v, double ***u, int nx, int ny, int nz);
+    void swap3D (double ****v_ptr, double ****u_ptr);
 
     unsigned int iter = 0;
 
@@ -152,6 +153,7 @@ void smoothing_iterator3D (double ***u, double ***v, int nx, int ny,
     //printf("Smoothing for %d itearions ...", iterations);
     while (iter < iterations) {
         smooth3D(u, v, nx, ny, nz);
+        //swap3D(&v, &u);
         copy_array3D(v, u, nx, ny, nz);   
         // set v = u for next iteration 
         iter++;
@@ -180,11 +182,17 @@ void print_array3D (char *Arrname, double ***Arr, int nx, int ny, int nz)
 
 void copy_array3D (double ***v, double ***u, int nx, int ny, int nz)
 {
-    int array_size = ny * sizeof(double);
-
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             memcpy(v[i][j], u[i][j], array_size);
         }
     }
+}
+
+
+void swap3D (double ****v_ptr, double ****u_ptr)
+{
+    double ***u_tmp = *v_ptr;
+    *v_ptr = *u_ptr;
+    *u_ptr = u_tmp;
 }
