@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -lm
+CFLAGS = -lm -O3
 
 
 read_write_test: read_write_test.c
@@ -14,5 +14,6 @@ smooth3D: smooth3D.c
 	$(CC) -o $@ $^ $(CFLAGS)
 
 
+.PHONY: clean
 clean:
 	rm read_write_test array_copy smooth3D

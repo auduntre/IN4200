@@ -69,9 +69,10 @@ int main (int argc, char **argv)
 
     free3D(u, nx, ny);
     free3D(v, nx, ny);
-
-    free(v_storage);
-    free(u_storage);
+    printf("Freeing underlaying storage...");
+    //free(v_storage);
+    //free(u_storage);
+    printf("DONE.\n");
     return 0;
 }
 
@@ -182,6 +183,7 @@ void print_array3D (char *Arrname, double ***Arr, int nx, int ny, int nz)
 
 void copy_array3D (double ***v, double ***u, int nx, int ny, int nz)
 {
+    int array_size = nz;
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             memcpy(v[i][j], u[i][j], array_size);
