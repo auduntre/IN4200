@@ -10,3 +10,4 @@ for (i=0; i<N, i++)
 ```
 to measure the realistically achivable memory bandwidht of the CPU. This loop
 has a one store (`A[i]`), one load (`B[i]`) and on FP operations (`*`).
+The code balance is therefore: $B_c = \frac{1 Store + 1 load }{1 FP} = 2$
