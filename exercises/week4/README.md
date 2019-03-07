@@ -8,4 +8,5 @@ The program `memband.c` makes use of the loop:
 for (i=0; i<N, i++)
     A[i] = s*B[i];
 ```
-to measure the realistically achivable memory bandwidht of the CPU.
+to measure the realistically achivable memory bandwidht of the CPU. This loop
+has a one store (`A[i]`), one load (`B[i]`) and on FP operations (`*`).
