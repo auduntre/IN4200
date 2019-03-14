@@ -1,5 +1,5 @@
-#ifndef PAGERANK_H
-#define PAGERANK_H
+#ifndef PE_FUNCTIONS_AUDUNTRE_H
+#define PE_FUNCTIONS_AUDUNTRE_H
 
 #include <stdlib.h>
 #include <stdio.h>
