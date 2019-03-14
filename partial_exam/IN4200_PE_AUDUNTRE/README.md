@@ -6,3 +6,5 @@
 see: `report/report.pdf`.
 * Header files in `include/` folder.
 * Source code (`.c` files) in `src/` folder.
+
+To make a zip file of the project run the bash file `collectSubmisison.sh` 
