@@ -1,8 +1,6 @@
 #ifndef PE_FUNCTIONS_AUDUNTRE_H
 #define PE_FUNCTIONS_AUDUNTRE_H
 
-#include <string.h>
-
 double ** read_grap_from_file (char *filename);
  
 double * PageRank_iterations (int damping, double threshold);
