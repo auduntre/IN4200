@@ -3,7 +3,7 @@ SHELL = /bin/sh
 # Keeping make from doing something with files named:
 .PHONY: all clean
 
-# Explicitly set file suffixes, not nesseacry
+# Explicitly set file suffixes, not necessary
 .SUFFIXES:
 .SUFFIXES: .c .h. .o
 
@@ -11,7 +11,8 @@ SHELL = /bin/sh
 CC = gcc
 
 # Folders
-IDIR = include
+IDIR = src #small project include folder not necessary
+SDIR = src
 ODIR = obj
 
 # Compiler flags
@@ -32,7 +33,7 @@ all: PE_auduntre
 
 
 # Make object files
-$(ODIR)/%.o: %.c $(DEPS)
+$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 		$(CC) -c -o $@ $< $(CFLAGS) $(LIBS)
 
 
