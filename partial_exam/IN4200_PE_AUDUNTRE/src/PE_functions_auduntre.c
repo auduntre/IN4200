@@ -4,7 +4,13 @@
 #include <stdlib.h>
 #include <omp.h>
 
-//double ** read_grap_from_file (char *filename);
+double ** read_grap_from_file (char *filename)
+{
+    FILE *graph_file;
+    fopen(graph_file, "r");
+
+    fclose(graph_file);
+}
  
 
 //double * PageRank_iterations (int damping, double threshold);
