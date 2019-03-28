@@ -7,9 +7,19 @@
 #ifndef PE_FUNCTIONS_AUDUNTRE_H
 #define PE_FUNCTIONS_AUDUNTRE_H
 
-double ** read_grap_from_file (char *filename);
+
+struct compressed_row_storage {
+    double *val;
+    int *col_idx;
+    int *row_ptr;
+};
+
+typedef struct compressed_row_storage CRS;
+
+CRS read_graph_from_file (char *filename);
  
-double * PageRank_iterations (int damping, double threshold);
+
+//double * PageRank_iterations (int damping, double threshold);
 
 
 /** @breif Listing out the top n websites.
@@ -18,6 +28,6 @@ double * PageRank_iterations (int damping, double threshold);
  *  @param top_n: The number of top sites to list out.
  *  @return Void  
  */
-void top_n_webpages (double *PE_score_vector, int top_n);
+//void top_n_webpages (double *PE_score_vector, int top_n);
 
 #endif
