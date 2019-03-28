@@ -7,6 +7,14 @@
 #ifndef PE_FUNCTIONS_AUDUNTRE_H
 #define PE_FUNCTIONS_AUDUNTRE_H
 
+// FIND MIN AND MAX FOR 2 OR 3 VARIABLES
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define MAX3(x, y, z) ((x) > (y)) ? (MAX(x, z)) : (MAX(y, z))
+#define MIN3(x, y, z) ((x) < (y)) ? (MIN(x, z)) : (MIN(y, z))
+
+#define FILE_HEADER_LINES 4
+#define NON_FOUND 0 
 
 struct compressed_row_storage {
     double *val;
@@ -18,9 +26,7 @@ typedef struct compressed_row_storage CRS;
 
 CRS read_graph_from_file (char *filename);
  
-
 //double * PageRank_iterations (int damping, double threshold);
-
 
 /** @breif Listing out the top n websites.
  *  
