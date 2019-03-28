@@ -20,6 +20,8 @@ struct compressed_row_storage {
     double *val;
     int *col_idx;
     int *row_ptr;
+
+    int len_row_ptr;
 };
 
 typedef struct compressed_row_storage CRS;
