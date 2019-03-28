@@ -4,15 +4,6 @@
 #include <stdlib.h>
 #include <omp.h>
 
-// FIND MIN AND MAX FOR 2 OR 3 VARIABLES
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define MAX3(x, y, z) ((x) > (y)) ? (MAX(x, z)) : (MAX(y, z))
-#define MIN3(x, y, z) ((x) < (y)) ? (MIN(x, z)) : (MIN(y, z))
-
-#define FILE_HEADER_LINES 4
-#define NON_FOUND 0 
-
 
 CRS read_graph_from_file (char *filename)
 {
