@@ -17,6 +17,8 @@ CRS read_graph_from_file (char *filename)
     }
 
     int edge_count, node_count; 
+    int from_node_id, to_node_id;
+    int edge_idx = 0;
 
     for (int header_idx = 0; header_idx < FILE_HEADER_LINES; header_idx++) {
         // third line contains node and edge count
@@ -36,9 +38,6 @@ CRS read_graph_from_file (char *filename)
         link_count_col[i] = 0.0;
         link_count_row[i] = 0;
     }
-    
-    int from_node_id, to_node_id;
-    int edge_idx = 0;
     
     // First run through file
     while (fscanf(graph_file, "%d %d", &from_node_id, &to_node_id) == 2) {
