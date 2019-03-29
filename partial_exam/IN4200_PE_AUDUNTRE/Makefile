@@ -10,7 +10,7 @@ ODIR = obj
 
 # Compiler flags
 CFLAGS = -I$(SDIR) -O3
-LIBS = -fopenmp
+LIBS = -fopenmp -lm
 
 # Dependencies (headers)
 DEPS = $(wildcard $(SDIR)/*.h)
@@ -38,7 +38,7 @@ all: PE_auduntre
 
 # Create program executable
 PE_auduntre: $(OBJS)
-		$(CC) -o $@ $^ $(CFLAGS)
+		$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 
 clean:

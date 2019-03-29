@@ -10,25 +10,29 @@
 // FIND MIN AND MAX FOR 2 OR 3 VARIABLES
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define MAX3(x, y, z) ((x) > (y)) ? (MAX(x, z)) : (MAX(y, z))
-#define MIN3(x, y, z) ((x) < (y)) ? (MIN(x, z)) : (MIN(y, z))
 
 #define FILE_HEADER_LINES 4
-#define NON_FOUND 0 
 
 struct compressed_row_storage {
     double *val;
     int *col_idx;
     int *row_ptr;
 
+    int *dangling;
+
+    int len_dangling;
     int len_row_ptr;
+    int len_val;
 };
 
 typedef struct compressed_row_storage CRS;
 
+
 CRS read_graph_from_file (char *filename);
  
-//double * PageRank_iterations (int damping, double threshold);
+double * PageRank_iterations (CRS crs, double damping, int maxiter, double threshold);
+
+double infty_norm(double *x, double *y, int n);
 
 /** @breif Listing out the top n websites.
  *  
