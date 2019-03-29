@@ -48,11 +48,6 @@ CRS read_graph_from_file (char *filename)
         }
     }
 
-    rewind(graph_file);
-    for (int header_idx = 0; header_idx < FILE_HEADER_LINES; header_idx++) {
-        fscanf(graph_file, "%*[^\n]\n");
-    }
-
     CRS crs = {
         .row_ptr = (int *) malloc ((node_count + 1) * sizeof(int)),
         .col_idx = (int *) malloc (edge_idx * sizeof(int)),
@@ -81,6 +76,11 @@ CRS read_graph_from_file (char *filename)
     for (int j = 0; j < crs.len_val; j++) {
         crs.col_idx[j] = -1;
     } 
+    
+    rewind(graph_file);
+    for (int header_idx = 0; header_idx < FILE_HEADER_LINES; header_idx++) {
+        fscanf(graph_file, "%*[^\n]\n");
+    }
 
     while (fscanf(graph_file, "%d %d", &from_node_id, &to_node_id) == 2) {
         if (from_node_id != to_node_id) {
@@ -114,10 +114,10 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
         pagerank_score[i] = init_guess;
     }
 
-    double inf_norm = 0.0;
+    double inf_norm = 1.0;
     int iteration_idx = 0;
     
-    do {
+    while(iteration_idx < maxiter && inf_norm > threshold) {
         double dangling_score = 0.0;
         inf_norm = 0.0;
 
@@ -126,23 +126,25 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
         }
 
         double iter_const = (1.0 - damping + damping * dangling_score) / node_count;
+        printf("dangling_score = %f, iter_const = %f\n", dangling_score, iter_const);
         double xtmp, tmp_norm;
         
-        for (int i = 1; i < crs.len_row_ptr; i++) {
-            xtmp = iter_const;
-
-            for (int j = crs.row_ptr[i-1]; j < crs.row_ptr[i]; j++) {
-                xtmp += damping * crs.val[j] * pagerank_score[crs.col_idx[j]];
+        for (int i = 0; i < node_count; i++) {
+            double xtmp = 0.0;
+            for (int j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
+                printf("%d, %d\n", crs.col_idx[j], i);
+                xtmp += crs.val[j] * pagerank_score[crs.col_idx[j]];
             }
 
-            tmp_norm = fabs(pagerank_score[i-1] - xtmp);
+            xtmp = iter_const + damping * xtmp;
+            tmp_norm = fabs(pagerank_score[i] - xtmp);
             inf_norm = MAX(tmp_norm, inf_norm);
-            pagerank_score[i-1] = xtmp;
+            pagerank_score[i] = xtmp;
         }
 
         iteration_idx++;
         printf("iterations: %d, inf_norm = %f\n", iteration_idx, inf_norm);
-    } while(iteration_idx < maxiter && inf_norm > threshold);
+    }
 
     return pagerank_score;
 }

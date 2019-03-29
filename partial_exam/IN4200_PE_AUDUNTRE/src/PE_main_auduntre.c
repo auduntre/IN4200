@@ -7,6 +7,16 @@
 
 int main (int argc, char **argv)
 {
+    int maxiter = 10;
+    double damping = 0.85;
+
+    if (argc > 1) {
+        maxiter = atoi(argv[1]);
+        if (argc > 2) {
+            damping = atof(argv[2]);
+        }
+    }
+
     double start = omp_get_wtime();
     CRS crs_test = read_graph_from_file("web_graphs/8-webpages.txt");
     double end = omp_get_wtime();
@@ -30,7 +40,7 @@ int main (int argc, char **argv)
     }
 
     start = omp_get_wtime();
-    double *x = PageRank_iterations (crs_test, 1, 100, 1.0E-14);
+    double *x = PageRank_iterations (crs_test, 1, maxiter, 1.0E-14);
     end = omp_get_wtime();
 
     printf("ELAPSED TIME PAGERANK ITER: %f sec.\n", end - start);
