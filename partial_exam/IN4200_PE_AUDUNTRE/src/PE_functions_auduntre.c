@@ -66,6 +66,7 @@ CRS read_graph_from_file (char *filename)
     int *tmp_dangling = (int *) malloc (node_count * sizeof(int)); 
     for (int i = 1; i < crs.len_row_ptr; i++) {
         crs.row_ptr[i] = crs.row_ptr[i-1] + link_count_row[i-1];
+        
         if (link_count_col[i-1] == 0) {
             tmp_dangling[crs.len_dangling] = i-1;
             crs.len_dangling++;
