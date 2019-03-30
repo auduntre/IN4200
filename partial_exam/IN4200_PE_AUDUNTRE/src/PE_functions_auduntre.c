@@ -107,6 +107,7 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
     int node_count = crs.len_row_ptr - 1;
 
     double *pagerank_score = (double *) malloc (node_count * sizeof(double));
+    double *pagerank_score_past = (double *) malloc (node_count * sizeof(double));
     double init_guess = 1.0 / (double) node_count;
 
     // Initial guess
@@ -121,31 +122,34 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
         double dangling_score = 0.0;
         inf_norm = 0.0;
 
+        for (int i = 0; i < node_count; i++) {
+            pagerank_score_past[i] = pagerank_score[i]; 
+        }
+
         for (int k = 0; k < crs.len_dangling; k++) {
-            dangling_score += pagerank_score[crs.dangling[k]];
+            dangling_score += pagerank_score_past[crs.dangling[k]];
         }
 
         double iter_const = (1.0 - damping + damping * dangling_score) / node_count;
-        printf("dangling_score = %f, iter_const = %f\n", dangling_score, iter_const);
-        double xtmp, tmp_norm;
+        double tmp_norm;
         
         for (int i = 0; i < node_count; i++) {
-            double xtmp = 0.0;
+            pagerank_score[i] = 0.0;
+            
             for (int j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
-                printf("%d, %d\n", crs.col_idx[j], i);
-                xtmp += crs.val[j] * pagerank_score[crs.col_idx[j]];
+                pagerank_score[i] += crs.val[j] * pagerank_score_past[crs.col_idx[j]];
             }
 
-            xtmp = iter_const + damping * xtmp;
-            tmp_norm = fabs(pagerank_score[i] - xtmp);
+            pagerank_score[i] = iter_const + damping * pagerank_score[i];
+            tmp_norm = fabs(pagerank_score[i] - pagerank_score_past[i]);
             inf_norm = MAX(tmp_norm, inf_norm);
-            pagerank_score[i] = xtmp;
         }
 
         iteration_idx++;
-        printf("iterations: %d, inf_norm = %f\n", iteration_idx, inf_norm);
+        printf("iterations: %d, inf_norm = %.16f\n", iteration_idx, inf_norm);
     }
 
+    free(pagerank_score_past);
     return pagerank_score;
 }
 
