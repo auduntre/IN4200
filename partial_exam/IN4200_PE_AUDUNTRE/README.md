@@ -10,3 +10,8 @@ see: `report/report.pdf`.
 * Web graph files in `web_graphs` folder.
 
 To make a zip file of the project run the bash file `collect_submisison.sh`.
+
+### Verbose output from `PE_auduntre`
+
+To compile the program with verbose output add the command line argument `DFLAG=-DVERBOSE_MAIN`.
+Remember to clean the program (`make clean`) first if recompiling.

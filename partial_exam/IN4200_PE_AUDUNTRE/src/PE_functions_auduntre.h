@@ -7,10 +7,6 @@
 #ifndef PE_FUNCTIONS_AUDUNTRE_H
 #define PE_FUNCTIONS_AUDUNTRE_H
 
-// FIND MIN AND MAX FOR 2 OR 3 VARIABLES
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
 #define FILE_HEADER_LINES 4
 
 struct compressed_row_storage {
@@ -32,14 +28,12 @@ CRS read_graph_from_file (char *filename);
  
 double * PageRank_iterations (CRS crs, double damping, int maxiter, double threshold);
 
-double infty_norm(double *x, double *y, int n);
-
 /** @breif Listing out the top n websites.
  *  
  *  @param PE_score_vector: The score vector for webpages.
  *  @param top_n: The number of top sites to list out.
  *  @return Void  
  */
-//void top_n_webpages (double *PE_score_vector, int top_n);
+void top_n_webpages (double *PE_score_vector, int top_n);
 
 #endif

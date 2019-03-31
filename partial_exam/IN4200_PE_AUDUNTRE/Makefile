@@ -10,6 +10,7 @@ ODIR = obj
 
 # Compiler flags
 CFLAGS = -I$(SDIR) -O3
+DFLAGS = 
 LIBS = -fopenmp -lm
 
 # Dependencies (headers)
@@ -22,10 +23,9 @@ CSRC = $(wildcard $(SDIR)/*.c)
 _OBJS = $(CSRC:.c=.o)
 OBJS = $(patsubst $(SDIR)/%,$(ODIR)/%,$(_OBJS))
 
-
 # Make object files
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
-		$(CC) -c -o $@ $< $(CFLAGS) $(LIBS)
+		$(CC) -c -o $@ $< $(CFLAGS) $(DFLAGS) $(LIBS)
 
 
 # Keeping make from doing something with files named:
@@ -33,7 +33,7 @@ $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 
 
 # Programs
-all: PE_auduntre PE_auduntre_verbose
+all: PE_auduntre
 
 
 # Create program executable
@@ -41,10 +41,5 @@ PE_auduntre: $(OBJS)
 		$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 
-# Verbose version of program, use for diagnostics 
-PE_auduntre_verbose: $(OBJS)
-		$(CC) -o $@ $^ $(CFLAGS) $(LIBS) -DVERBOSE
-
-
 clean:
-	rm -f $(all) $(ODIR)/*.o
+	rm -f PE_auduntre $(ODIR)/*.o

@@ -117,35 +117,54 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 
     double inf_norm = 1.0;
     int iteration_idx = 0;
-    
+    int i, k;
+
     while(iteration_idx < maxiter && inf_norm > threshold) {
-        for (int i = 0; i < node_count; i++) {
+        #pragma omp parallel for private(i)
+        for (i = 0; i < node_count; i++) {
             pagerank_score_past[i] = pagerank_score[i]; 
         }
 
         double dangling_score = 0.0;
-        for (int k = 0; k < crs.len_dangling; k++) {
+        for (k = 0; k < crs.len_dangling; k++) {
             dangling_score += pagerank_score_past[crs.dangling[k]];
         }
-        
         double iter_const = (1.0 - damping + damping * dangling_score) / node_count;
-        //printf("iter_const = %f\n", iter_const);
+        
+        #ifdef VERBOSE_ITERATIONS
+        double inf_norm_past = inf_norm;
+        #endif 
+        
         inf_norm = 0.0;
 
-        for (int i = 0; i < node_count; i++) {
+        #pragma omp parallel for private(i) reduction(max: inf_norm) 
+        for (i = 0; i < node_count; i++) {
             double xtmp = 0.0;
             
             for (int j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
                 xtmp += crs.val[j] * pagerank_score_past[crs.col_idx[j]];
             }
 
+            xtmp = iter_const + damping * xtmp;
             double tmp_norm = fabs(xtmp - pagerank_score[i]);
-            inf_norm = MAX(tmp_norm, inf_norm);
-            pagerank_score[i] = iter_const + damping * xtmp;
+            inf_norm = fmax(tmp_norm, inf_norm);
+            pagerank_score[i] = xtmp;
         }
 
         iteration_idx++;
-        //printf("iterations: %d, inf_norm = %.16f\n", iteration_idx, inf_norm);
+        #ifdef VERBOSE_ITERATIONS
+        double rel_norm = (inf_norm_past - inf_norm) / inf_norm_past;
+        printf("iteration: %d, inf_norm = %.8g, relative norm change = %.8g\n", 
+               iteration_idx, inf_norm, rel_norm);
+        #endif
+    }
+
+    if (iteration_idx == maxiter && inf_norm < threshold) {
+        printf("DID NOT CONVERGE BELOW THRESHOLD FOR %d ITERATIONS.\n", maxiter);
+    }
+    else {
+        printf("USED %d ITERATIONS TO CONVERGE BELOW THRESHOLD OF %.8G. \n", 
+               iteration_idx, threshold);
     }
 
     free(pagerank_score_past);
@@ -153,22 +172,9 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 }
 
 
-double infty_norm(double *x, double *y, int n)
+void top_n_webpages (double *PE_score_vector, int top_n)
 {
-    double max_diff = fabs(x[0] - y[0]);
-    double tmp;
-    int i;
-
-    for (i = 0; i < n; i++) {
-        max_diff = MAX(fabs(x[i] - y[i]), max_diff);
-    }
-
-    return max_diff;
+    return;
 }
-
-//void top_n_webpages (double *PE_score_vector, int top_n)
-//{
-//    return;
-//}
 
 
