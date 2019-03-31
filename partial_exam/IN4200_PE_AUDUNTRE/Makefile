@@ -33,7 +33,7 @@ $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 
 
 # Programs
-all: PE_auduntre
+all: PE_auduntre PE_auduntre_verbose
 
 
 # Create program executable
@@ -41,5 +41,10 @@ PE_auduntre: $(OBJS)
 		$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 
+# Verbose version of program, use for diagnostics 
+PE_auduntre_verbose: $(OBJS)
+		$(CC) -o $@ $^ $(CFLAGS) $(LIBS) -DVERBOSE
+
+
 clean:
-	rm -f PE_auduntre $(ODIR)/*.o
+	rm -f $(all) $(ODIR)/*.o

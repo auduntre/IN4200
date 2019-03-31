@@ -119,34 +119,33 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
     int iteration_idx = 0;
     
     while(iteration_idx < maxiter && inf_norm > threshold) {
-        double dangling_score = 0.0;
-        inf_norm = 0.0;
-
         for (int i = 0; i < node_count; i++) {
             pagerank_score_past[i] = pagerank_score[i]; 
         }
 
+        double dangling_score = 0.0;
         for (int k = 0; k < crs.len_dangling; k++) {
             dangling_score += pagerank_score_past[crs.dangling[k]];
         }
-
-        double iter_const = (1.0 - damping + damping * dangling_score) / node_count;
-        double tmp_norm;
         
+        double iter_const = (1.0 - damping + damping * dangling_score) / node_count;
+        //printf("iter_const = %f\n", iter_const);
+        inf_norm = 0.0;
+
         for (int i = 0; i < node_count; i++) {
-            pagerank_score[i] = 0.0;
+            double xtmp = 0.0;
             
             for (int j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
-                pagerank_score[i] += crs.val[j] * pagerank_score_past[crs.col_idx[j]];
+                xtmp += crs.val[j] * pagerank_score_past[crs.col_idx[j]];
             }
 
-            pagerank_score[i] = iter_const + damping * pagerank_score[i];
-            tmp_norm = fabs(pagerank_score[i] - pagerank_score_past[i]);
+            double tmp_norm = fabs(xtmp - pagerank_score[i]);
             inf_norm = MAX(tmp_norm, inf_norm);
+            pagerank_score[i] = iter_const + damping * xtmp;
         }
 
         iteration_idx++;
-        printf("iterations: %d, inf_norm = %.16f\n", iteration_idx, inf_norm);
+        //printf("iterations: %d, inf_norm = %.16f\n", iteration_idx, inf_norm);
     }
 
     free(pagerank_score_past);

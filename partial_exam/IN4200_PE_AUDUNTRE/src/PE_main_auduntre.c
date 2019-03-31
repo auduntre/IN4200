@@ -7,7 +7,7 @@
 
 int main (int argc, char **argv)
 {
-    int maxiter = 10;
+    int maxiter = 1000;
     double damping = 0.85;
 
     if (argc > 1) {
@@ -18,9 +18,10 @@ int main (int argc, char **argv)
     }
 
     double start = omp_get_wtime();
-    CRS crs_test = read_graph_from_file("web_graphs/8-webpages.txt");
+    CRS crs_test = read_graph_from_file("web_graphs/100nodes_graphs.txt");
     double end = omp_get_wtime();
 
+    #ifdef VERBOSE
     printf("ELAPSED TIME READING GRPAH: %f sec.\n", end - start);
  
     printf("crs.row_ptr: \n");
@@ -38,16 +39,19 @@ int main (int argc, char **argv)
     for (int k = 0; k < crs_test.len_dangling; k++) {
         printf("dangling[%d] = %d\n", k, crs_test.dangling[k]);
     }
+    #endif
 
     start = omp_get_wtime();
-    double *x = PageRank_iterations (crs_test, 1, maxiter, 1.0E-14);
+    double *x = PageRank_iterations (crs_test, damping, maxiter, 1.0E-8);
     end = omp_get_wtime();
 
     printf("ELAPSED TIME PAGERANK ITER: %f sec.\n", end - start);
 
+    #ifdef VERBOSE
     for (int i = 0; i < crs_test.len_row_ptr - 1; i++) {
-        printf("x[%d] = %f \n", i, x[i]);
+        printf("x[%d] = %.10g \n", i, x[i]);
     }
+    #endif
     
     free(crs_test.val);
     free(crs_test.col_idx);
