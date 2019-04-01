@@ -11,7 +11,8 @@ int main (int argc, char **argv)
     
     double damping = 0.85;
     double threshold = 1E-16;
-    char *filename = "web_graphs/8-webpages.txt"; 
+    char *infilename = "web_graphs/8-webpages.txt"; 
+    char *outfilename = "report/top_n.txt";
     int maxiter = 1000;
     int top_n;
     
@@ -19,11 +20,11 @@ int main (int argc, char **argv)
     if (argc > 2) damping = atof(argv[2]);
     if (argc > 3) threshold = atof(argv[3]);
     if (argc > 4) top_n = atoi(argv[4]);
-    if (argc > 5) filename = argv[5];
-                  
-
+    if (argc > 5) infilename = argv[5];
+    if (argc > 6) outfilename = argv[6];
+              
     double start = omp_get_wtime();
-    CRS crs_test = read_graph_from_file(filename);
+    CRS crs_test = read_graph_from_file(infilename);
     double end = omp_get_wtime();
 
     printf("ELAPSED TIME READING GRPAH: %f sec.\n", end - start);
