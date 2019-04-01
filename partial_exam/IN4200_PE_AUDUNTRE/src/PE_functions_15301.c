@@ -116,32 +116,46 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
     }
 
     double inf_norm = 1.0;
+    double iter_const = 0.0;
+    double dangling_score = 0.0;
     int iteration_idx = 0;
-    int i, k;
+    int i, k, j;
+    
 
+    #pragma omp parallel private(i, j, k)
+    {
     while(iteration_idx < maxiter && inf_norm > threshold) {
-        #pragma omp parallel for private(i)
+        #pragma omp single
+        {
+            dangling_score = 0.0;
+        }
+       
+        #pragma omp for schedule(dynamic, 1024)
         for (i = 0; i < node_count; i++) {
             pagerank_score_past[i] = pagerank_score[i]; 
         }
 
-        double dangling_score = 0.0;
+        #pragma omp for reduction(+: dangling_score) schedule(dynamic, 1024)
         for (k = 0; k < crs.len_dangling; k++) {
             dangling_score += pagerank_score_past[crs.dangling[k]];
         }
-        double iter_const = (1.0 - damping + damping * dangling_score) / node_count;
         
-        #ifdef VERBOSE_ITERATIONS
-        double inf_norm_past = inf_norm;
-        #endif 
-        
-        inf_norm = 0.0;
+        #pragma omp single
+        {
+            iter_const = (1.0 - damping + damping * dangling_score) / node_count;
+            
+            #ifdef VERBOSE_ITERATIONS
+            double inf_norm_past = inf_norm;
+            #endif 
+            
+            inf_norm = 0.0;
+        }
 
-        #pragma omp parallel for private(i) reduction(max: inf_norm) 
+        #pragma omp for reduction(max: inf_norm) schedule(dynamic, 1024)
         for (i = 0; i < node_count; i++) {
             double xtmp = 0.0;
             
-            for (int j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
+            for (j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
                 xtmp += crs.val[j] * pagerank_score_past[crs.col_idx[j]];
             }
 
@@ -151,12 +165,16 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
             pagerank_score[i] = xtmp;
         }
 
-        iteration_idx++;
-        #ifdef VERBOSE_ITERATIONS
-        double rel_norm = (inf_norm_past - inf_norm) / inf_norm_past;
-        printf("iteration: %d, inf_norm = %.8g, relative norm change = %.8g\n", 
-               iteration_idx, inf_norm, rel_norm);
-        #endif
+        #pragma omp single
+        {
+            iteration_idx++;
+            #ifdef VERBOSE_ITERATIONS
+            double rel_norm = (inf_norm_past - inf_norm) / inf_norm_past;
+            printf("iteration: %d, inf_norm = %.8g, relative norm change = %.8g\n", 
+                   iteration_idx, inf_norm, rel_norm);
+            #endif
+        }
+    }
     }
 
     if (iteration_idx == maxiter && inf_norm < threshold) {
