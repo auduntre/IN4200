@@ -9,16 +9,19 @@ int main (int argc, char **argv)
 {
     
     double damping = 0.85;
+    double threshold = 1E-16;
     char *filename = "web_graphs/8-webpages.txt"; 
     int maxiter = 1000;
     
-
     if (argc > 1) {
         maxiter = atoi(argv[1]);
         if (argc > 2) {
             damping = atof(argv[2]);
             if (argc > 3) {
-                filename = argv[3];
+                threshold = atof(argv[3]);
+                if (argc > 4) {
+                    filename = argv[4];
+                }
             }
         }
     }
