@@ -13,7 +13,7 @@ To make a zip file of the project run the shell script `collect_submisison.sh`.
 
 ### Compiling
 
-run `make PE_15301` to compile.
+Run `make PE_15301` to compile.
 
 ##### Verbose output from `PE_15301`:
 
@@ -22,7 +22,7 @@ To compile the program with verbose output add the command line argument `DFLAGS
 * `-DVERBOSE_MAIN` for the `main` function.
 * `-DVERBOSE_ITERATIONS` for the `PageRank_iterations` function.
 
-Remember to run `make clean` first if recompiling.
+Remember to delete the program and object files by `make clean` first if recompiling.
 
 
 ### Running
