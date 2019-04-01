@@ -12,7 +12,6 @@ if [ ! -f "$GRAPH_FILE" ]; then
     cd ..
 fi
 
-
 # Send the number of threads to be used as a argument
 for i in $(seq 1 $1); do
     echo "RUNNNING CODE WITH $i THREADS:"
