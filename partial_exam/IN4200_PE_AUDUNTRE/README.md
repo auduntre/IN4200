@@ -15,7 +15,7 @@ To make a zip file of the project run the bash file `collect_submisison.sh`.
 
 run `make PE_15301` to compile.
 
-#### Verbose output from `PE_15301`
+##### Verbose output from `PE_15301`:
 
 To compile the program with verbose output add the command line argument `DFLAGS=-DVERBOSE_$(FUNC)` where `$(FUNC)` is the function where verbose output is wanter.
 
