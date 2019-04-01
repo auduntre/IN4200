@@ -16,6 +16,6 @@ fi
 for i in $(seq 1 $1); do
     echo "RUNNNING CODE WITH $i THREADS:"
     echo "-----------------------------"
-    OMP_NUM_THREADS=$i ./PE_15301 1000 0.85 1.0E-16 $GRAPH_FILE
+    OMP_NUM_THREADS=$i ./PE_15301 1000 0.85 1.0E-16 1 $GRAPH_FILE
     echo
 done
