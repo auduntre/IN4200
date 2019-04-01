@@ -11,7 +11,11 @@ see: `report/report.pdf`.
 
 To make a zip file of the project run the bash file `collect_submisison.sh`.
 
-### Verbose output from `PE_auduntre`
+### Verbose output from `PE_15301`
 
-To compile the program with verbose output add the command line argument `DFLAG=-DVERBOSE_MAIN`.
+To compile the program with verbose output add the command line argument `DFLAGS=-DVERBOSE_$(FUNC)` where `$(FUNC)` is the function where verbose output is wanter.
+
+* `-DVERBOSE_MAIN` for the `main` function.
+* `-DVERBOSE_ITERATIONS` for the `PageRank_iterations` function.
+
 Remember to clean the program (`make clean`) first if recompiling.
