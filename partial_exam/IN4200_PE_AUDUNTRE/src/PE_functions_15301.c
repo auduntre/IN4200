@@ -190,9 +190,58 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 }
 
 
-void top_n_webpages (double *PE_score_vector, int top_n)
+void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 {
+    int find_min_idx(double *score_vector, double *min_value, int len_n);
+
+    if (top_n > len_n) {
+        printf("len_n should be bigger or equal to top_n\n");
+        exit(EXIT_FAILURE);
+    }
+
+    double *top_n_vector = (double *) malloc (top_n * sizeof(double));
+    int *top_n_pos = (int *) malloc (top_n * sizeof(int));
+
+    double min_top_n;
+    int  min_idx;
+
+    for (int i = 0; i < top_n; i++) {
+        top_n_vector[i] = PE_score_vector[i];
+        top_n_pos[i] = i;
+    }
+
+    min_idx = find_min_idx(top_n_vector, &min_top_n, top_n);
+
+    for (int i = 0; i < len_n; i++) {
+        if (PE_score_vector[i] > min_top_n) {
+            top_n_vector[min_idx] = PE_score_vector[i];
+            top_n_pos[min_idx] = i;
+
+            min_idx = find_min_idx(top_n_vector, &min_top_n, top_n);
+        }
+    }
+    
+    for (int i = 0; i < top_n; i++) {
+        printf("rank %d, site: %d: %.8g\n", i+1, top_n_pos[i], top_n_vector[i]);
+    }
+
+    free(top_n_pos);
+    free(top_n_vector);
     return;
 }
 
 
+int find_min_idx (double *score_vector, double *min_value, int len_n)
+{
+    int min_idx = 0;
+    *min_value = score_vector[0];
+
+    for (int i = 1; i < len_n; i++) {
+        if (score_vector[i] < *min_value) {
+            min_idx = i;
+            *min_value = score_vector[i];
+        }
+    }
+
+    return min_idx;
+}

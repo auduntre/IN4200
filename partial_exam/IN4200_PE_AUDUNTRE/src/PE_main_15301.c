@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <omp.h>
 
 #include "PE_functions_15301.h"
@@ -12,19 +13,14 @@ int main (int argc, char **argv)
     double threshold = 1E-16;
     char *filename = "web_graphs/8-webpages.txt"; 
     int maxiter = 1000;
+    int top_n;
     
-    if (argc > 1) {
-        maxiter = atoi(argv[1]);
-        if (argc > 2) {
-            damping = atof(argv[2]);
-            if (argc > 3) {
-                threshold = atof(argv[3]);
-                if (argc > 4) {
-                    filename = argv[4];
-                }
-            }
-        }
-    }
+    if (argc > 1) maxiter = atoi(argv[1]);
+    if (argc > 2) damping = atof(argv[2]);
+    if (argc > 3) threshold = atof(argv[3]);
+    if (argc > 4) top_n = atoi(argv[4]);
+    if (argc > 5) filename = argv[5];
+                  
 
     double start = omp_get_wtime();
     CRS crs_test = read_graph_from_file(filename);
@@ -61,6 +57,12 @@ int main (int argc, char **argv)
         printf("x[%d] = %.10g \n", i, x[i]);
     }
     #endif
+
+    start = omp_get_wtime();
+    top_n_webpages(x, crs_test.len_row_ptr -1, top_n);
+    end = omp_get_wtime();
+    
+    printf("ELAPSED TIME TOP N: %f sec.\n", end - start);
     
     free(crs_test.val);
     free(crs_test.col_idx);
