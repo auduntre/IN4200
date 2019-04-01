@@ -7,18 +7,24 @@
 
 int main (int argc, char **argv)
 {
-    int maxiter = 1000;
+    
     double damping = 0.85;
+    char *filename = "web_graphs/8-webpages.txt"; 
+    int maxiter = 1000;
+    
 
     if (argc > 1) {
         maxiter = atoi(argv[1]);
         if (argc > 2) {
             damping = atof(argv[2]);
+            if (argc > 3) {
+                filename = argv[3];
+            }
         }
     }
 
     double start = omp_get_wtime();
-    CRS crs_test = read_graph_from_file("web_graphs/web-NotreDame.txt");
+    CRS crs_test = read_graph_from_file(filename);
     double end = omp_get_wtime();
 
     printf("ELAPSED TIME READING GRPAH: %f sec.\n", end - start);
