@@ -33,13 +33,13 @@ $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 
 
 # Programs
-all: PE_auduntre
+all: PE_15301
 
 
 # Create program executable
-PE_auduntre: $(OBJS)
+PE_15301: $(OBJS)
 		$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 
 clean:
-	rm -f PE_auduntre $(ODIR)/*.o
+	rm -f PE_15301 $(ODIR)/*.o
