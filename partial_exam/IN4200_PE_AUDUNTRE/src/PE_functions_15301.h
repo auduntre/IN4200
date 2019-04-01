@@ -4,8 +4,8 @@
  *  @author Audun Tahina Reitan
  */
 
-#ifndef PE_FUNCTIONS_AUDUNTRE_H
-#define PE_FUNCTIONS_AUDUNTRE_H
+#ifndef PE_FUNCTIONS_15301_H
+#define PE_FUNCTIONS_15301_H
 
 #define FILE_HEADER_LINES 4
 

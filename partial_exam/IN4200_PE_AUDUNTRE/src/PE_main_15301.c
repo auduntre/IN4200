@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <omp.h>
 
-#include "PE_functions_auduntre.h"
+#include "PE_functions_15301.h"
 
 
 int main (int argc, char **argv)
@@ -18,7 +18,7 @@ int main (int argc, char **argv)
     }
 
     double start = omp_get_wtime();
-    CRS crs_test = read_graph_from_file("web_graphs/100nodes_graphs.txt");
+    CRS crs_test = read_graph_from_file("web_graphs/web-NotreDame.txt");
     double end = omp_get_wtime();
 
     printf("ELAPSED TIME READING GRPAH: %f sec.\n", end - start);
