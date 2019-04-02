@@ -14,7 +14,7 @@ int main (int argc, char **argv)
     char *infilename = "web_graphs/8-webpages.txt"; 
     char *outfilename = "report/top_n.txt";
     int maxiter = 1000;
-    int top_n;
+    int top_n = 5;
     
     if (argc > 1) maxiter = atoi(argv[1]);
     if (argc > 2) damping = atof(argv[2]);
