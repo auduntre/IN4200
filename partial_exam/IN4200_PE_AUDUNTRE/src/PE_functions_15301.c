@@ -118,11 +118,12 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
     double inf_norm = 1.0;
     double iter_const = 0.0;
     double dangling_score = 0.0;
+    double xtmp;
     int iteration_idx = 0;
     int i, k, j;
     
 
-    #pragma omp parallel private(i, j, k)
+    #pragma omp parallel private(i, j, k, xtmp)
     {
     while(iteration_idx < maxiter && inf_norm > threshold) {
         #pragma omp single
@@ -130,12 +131,12 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
             dangling_score = 0.0;
         }
        
-        #pragma omp for schedule(dynamic, 1024)
+        #pragma omp for //schedule(dynamic, 1024)
         for (i = 0; i < node_count; i++) {
             pagerank_score_past[i] = pagerank_score[i]; 
         }
 
-        #pragma omp for reduction(+: dangling_score) schedule(dynamic, 1024)
+        #pragma omp for reduction(+: dangling_score) //schedule(dynamic, 1024)
         for (k = 0; k < crs.len_dangling; k++) {
             dangling_score += pagerank_score_past[crs.dangling[k]];
         }
@@ -151,17 +152,16 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
             inf_norm = 0.0;
         }
 
-        #pragma omp for reduction(max: inf_norm) schedule(dynamic, 1024)
+        #pragma omp for reduction(max: inf_norm) //schedule(dynamic, 1024)
         for (i = 0; i < node_count; i++) {
-            double xtmp = 0.0;
+            xtmp = 0.0;
             
             for (j = crs.row_ptr[i]; j < crs.row_ptr[i+1]; j++) {
                 xtmp += crs.val[j] * pagerank_score_past[crs.col_idx[j]];
             }
 
             xtmp = iter_const + damping * xtmp;
-            double tmp_norm = fabs(xtmp - pagerank_score[i]);
-            inf_norm = fmax(tmp_norm, inf_norm);
+            inf_norm = fmax(inf_norm, fabs(xtmp - pagerank_score[i]));
             pagerank_score[i] = xtmp;
         }
 
@@ -177,7 +177,7 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
     }
     }
 
-    if (iteration_idx == maxiter && inf_norm < threshold) {
+    if (iteration_idx == maxiter && inf_norm > threshold) {
         printf("DID NOT CONVERGE BELOW THRESHOLD FOR %d ITERATIONS.\n", maxiter);
     }
     else {
@@ -212,7 +212,7 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 
     min_idx = find_min_idx(top_n_vector, &min_top_n, top_n);
 
-    for (int i = 0; i < len_n; i++) {
+    for (int i = top_n; i < len_n; i++) {
         if (PE_score_vector[i] > min_top_n) {
             top_n_vector[min_idx] = PE_score_vector[i];
             top_n_pos[min_idx] = i;
