@@ -199,6 +199,8 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
     int find_min_idx(double *score_vector, double *min_value, int beg, int end);
     void permution_sort (double *score_vector, int *perm, int beg, int end);
 
+    FILE *output_file = fopen("report/output.txt", "w");
+
     if (top_n > len_n) {
         printf("len_n should be bigger or equal to top_n\n");
         exit(EXIT_FAILURE);
@@ -220,7 +222,7 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
     int *perm = (int *) malloc (top_n * sizeof(int));
 
     //NO point in parallelzing small top_n / len_n or small len_n
-    if (len_n > 10 * nthreads && top_n < thread_interval) {
+    if (len_n > 1000000 * nthreads && top_n < thread_interval/10 && nthreads > 1) {
         int start_idx[nthreads + 1];
         
         start_idx[0] = 0;
@@ -252,7 +254,6 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
             }
         }
 
-        printf("Done\n");
         find_top_n(top_nthreads_vector, top_n_vector, top_n_pos, len_top_nt, 0, top_n);
     
         for (i = 0; i < top_n; i++) {
@@ -264,16 +265,16 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
         find_top_n(PE_score_vector, top_n_vector, top_n_pos, len_n, 0, top_n);
     }
 
-    printf("Sorting: \n");
     permution_sort (top_n_vector, perm, 0, top_n);
 
-    printf("Sorted \n");
     for(int k = top_n - 1; k >= 0; k--) {
         int rank = top_n - k;
-        printf("Rank: %d, Site: %d, PE_score: %.10g\n", 
+        fprintf(output_file, "Rank: %d, Site: %d, PE_score: %.10g\n", 
                 rank, top_n_pos[perm[k]], top_n_vector[perm[k]]);
     }
 
+    fclose(output_file);
+    free(perm);
     free(top_nthreads_pos);
     free(top_nthreads_vector);
     free(top_n_pos);

@@ -6,7 +6,7 @@
 * For the report about programming structure and findings and measurementers,
 see: `report/report.pdf`.
 * Header files with function documentations in `src/` folder.
-* Source code (`.c` files) in `src/` folder.
+* Source code (`.c` files) with local documentation in `src/` folder.
 * Web graph files in `web_graphs` folder.
 
 To make a zip file of the project run the shell script `collect_submisison.sh`.
@@ -27,5 +27,8 @@ Remember to delete the program and object files by `make clean` first if recompi
 
 ### Running
 
-The program is run by `.\PE_15301 [MAXITER] [DAMPING] [THRESHOLD] [PATH/FILENAME]` where the arguments are given in order.
-The program defaults to `.\PE_15301 1000 0.85 1.0E-16 web_graphs/8-webpages.txt` for the arguments not given. 
+The program is run by `.\PE_15301 [MAXITER] [DAMPING] [THRESHOLD] [TOP N] [PATH/FILENAME]` where the arguments are given in order.
+The program defaults to `.\PE_15301 1000 0.85 1.0E-16 5 web_graphs/8-webpages.txt` for the arguments not given.
+
+##### Input files
+Input files hase to be on the form of 8-webpages.txt included in the `web_graphs` folder.
