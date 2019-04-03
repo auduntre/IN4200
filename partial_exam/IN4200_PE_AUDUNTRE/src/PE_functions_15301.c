@@ -194,9 +194,6 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 
 void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 {
-    void find_top_n (double *score_vector, double *top_vector, int *top_pos,
-                     int len_n, int beg, int end);
-    int find_min_idx(double *score_vector, double *min_value, int beg, int end);
     void permution_sort (double *score_vector, int *perm, int beg, int end);
 
     FILE *output_file = fopen("report/output.txt", "w");
@@ -206,79 +203,19 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
         exit(EXIT_FAILURE);
     }
 
-    double *top_n_vector = (double *) malloc (top_n * sizeof(double));
-    int *top_n_pos = (int *) malloc (top_n * sizeof(int));
 
-    int nthreads = omp_get_max_threads();
-    int thread_interval = len_n / nthreads;
-    int len_top_nt = nthreads * top_n;
-    int min_idx;
-    int i, j, k;
+    int *perm = (int *) malloc (len_n * sizeof(int));
 
-    double min_value;
-    
-    double *top_nthreads_vector = (double *) malloc (len_top_nt * sizeof(double));
-    int *top_nthreads_pos = (int *) malloc (len_top_nt * sizeof(int));
-    int *perm = (int *) malloc (top_n * sizeof(int));
+    permution_sort (PE_score_vector, perm, 0, len_n);
 
-    //NO point in parallelzing small top_n / len_n or small len_n
-    if (len_n > 1000000 * nthreads && top_n < thread_interval/10 && nthreads > 1) {
-        int start_idx[nthreads + 1];
-        
-        start_idx[0] = 0;
-        for (i = 1; i < nthreads; i++) {
-            start_idx[i] = start_idx[i-1] + thread_interval; 
-        }
-        start_idx[nthreads] = len_n;
-
-        #pragma omp parallel for private(i, j, k, min_value, min_idx)
-        for (i = 0; i < nthreads; i++) {
-            int k0 = i * top_n;
-            k = k0;
-
-            for (j = start_idx[i]; j < start_idx[i] + top_n - 1; j++) {
-                top_nthreads_vector[k] = PE_score_vector[j];
-                top_nthreads_pos[k] = j;
-                k++;
-            }
-
-            min_idx = find_min_idx(top_nthreads_vector, &min_value, k0, k);
-        
-            for (j = start_idx[i] + top_n; j < start_idx[i+1]; j++) {
-                if (PE_score_vector[i] > min_value) {
-                    top_nthreads_vector[min_idx] = PE_score_vector[j];
-                    top_nthreads_pos[min_idx] = j;
-
-                    min_idx = find_min_idx(top_nthreads_vector, &min_value, k0, k);
-                }
-            }
-        }
-
-        find_top_n(top_nthreads_vector, top_n_vector, top_n_pos, len_top_nt, 0, top_n);
-    
-        for (i = 0; i < top_n; i++) {
-            top_n_pos[i] = top_nthreads_pos[top_n_pos[i]];
-        }
-
-    }
-    else {
-        find_top_n(PE_score_vector, top_n_vector, top_n_pos, len_n, 0, top_n);
-    }
-
-    permution_sort (top_n_vector, perm, 0, top_n);
-
-    for(int k = top_n - 1; k >= 0; k--) {
-        int rank = top_n - k;
-        fprintf(output_file, "Rank: %d, Site: %d, PE_score: %.10g\n", 
-                rank, top_n_pos[perm[k]], top_n_vector[perm[k]]);
+    for(int k = len_n - 1; k >= len_n - top_n; k--) {
+        int rank = len_n - k;
+        fprintf(output_file, "Rank: %7d, Site: %7d, PE_score: %.10g\n", 
+                rank, perm[k], PE_score_vector[perm[k]]);
     }
 
     fclose(output_file);
     free(perm);
-    free(top_nthreads_pos);
-    free(top_nthreads_vector);
-    free(top_n_pos);
-    free(top_n_vector);
     return;
 }
 
@@ -331,17 +268,25 @@ void permution_sort (double *arr, int *perm, int beg, int end)
     void sort_perm (double *arr, int *perm, int beg, int end);
     
     // INIT PERM MATRIX
+    #pragma omp for
     for (int i = beg; i < end; i++) {
         perm[i] = i;
     }
 
-    sort_perm(arr, perm, beg, end);
+    #pragma omp parallel
+    {
+    #pragma omp single nowait 
+    {
+        sort_perm(arr, perm, beg, end);
+    }
+    }
 }
 
 
 void sort_perm (double *arr, int *perm, int beg, int end)
 {
     void swap (int *a, int *b);
+    int min_size = 10000;
 
     if (end > beg + 1) {
         double piv = arr[perm[beg]];
@@ -359,8 +304,20 @@ void sort_perm (double *arr, int *perm, int beg, int end)
         }
         
         swap(&perm[--l], &perm[beg]);
-        sort_perm(arr, perm, beg, l);
-        sort_perm(arr, perm, r, end);
+        if (end - beg > min_size) {
+            #pragma omp task 
+            {
+                sort_perm(arr, perm, beg, l);
+            }
+            #pragma omp task
+            {
+                sort_perm(arr, perm, r, end);
+            }
+        }
+        else {
+           sort_perm(arr, perm, beg, l);
+           sort_perm(arr, perm, r, end);
+        }
     } 
 }
 
