@@ -9,7 +9,7 @@ SDIR = src
 ODIR = obj
 
 # Compiler flags
-CFLAGS = -I$(SDIR) -O3
+CFLAGS = -I$(SDIR) -O3 -std=c99
 DFLAGS = 
 LIBS = -fopenmp -lm
 

@@ -194,7 +194,10 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 
 void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 {
-    int find_min_idx(double *score_vector, double *min_value, int len_n);
+    void find_top_n (double *score_vector, double *top_vector, int *top_pos,
+                     int len_n, int beg, int end);
+    int find_min_idx(double *score_vector, double *min_value, int beg, int end);
+    void permution_sort (double *score_vector, int *perm, int beg, int end);
 
     if (top_n > len_n) {
         printf("len_n should be bigger or equal to top_n\n");
@@ -204,41 +207,114 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
     double *top_n_vector = (double *) malloc (top_n * sizeof(double));
     int *top_n_pos = (int *) malloc (top_n * sizeof(int));
 
-    double min_top_n;
-    int  min_idx;
+    int nthreads = omp_get_max_threads();
+    int thread_interval = len_n / nthreads;
+    int len_top_nt = nthreads * top_n;
+    int min_idx;
+    int i, j, k;
 
-    for (int i = 0; i < top_n; i++) {
-        top_n_vector[i] = PE_score_vector[i];
-        top_n_pos[i] = i;
-    }
-
-    min_idx = find_min_idx(top_n_vector, &min_top_n, top_n);
-
-    for (int i = top_n; i < len_n; i++) {
-        if (PE_score_vector[i] > min_top_n) {
-            top_n_vector[min_idx] = PE_score_vector[i];
-            top_n_pos[min_idx] = i;
-
-            min_idx = find_min_idx(top_n_vector, &min_top_n, top_n);
-        }
-    }
+    double min_value;
     
-    for (int i = 0; i < top_n; i++) {
-        printf("rank %d, site: %d: %.8g\n", i+1, top_n_pos[i], top_n_vector[i]);
+    double *top_nthreads_vector = (double *) malloc (len_top_nt * sizeof(double));
+    int *top_nthreads_pos = (int *) malloc (len_top_nt * sizeof(int));
+    int *perm = (int *) malloc (top_n * sizeof(int));
+
+    //NO point in parallelzing small top_n / len_n or small len_n
+    if (len_n > 10 * nthreads && top_n < thread_interval) {
+        int start_idx[nthreads + 1];
+        
+        start_idx[0] = 0;
+        for (i = 1; i < nthreads; i++) {
+            start_idx[i] = start_idx[i-1] + thread_interval; 
+        }
+        start_idx[nthreads] = len_n;
+
+        #pragma omp parallel for private(i, j, k, min_value, min_idx)
+        for (i = 0; i < nthreads; i++) {
+            int k0 = i * top_n;
+            k = k0;
+
+            for (j = start_idx[i]; j < start_idx[i] + top_n - 1; j++) {
+                top_nthreads_vector[k] = PE_score_vector[j];
+                top_nthreads_pos[k] = j;
+                k++;
+            }
+
+            min_idx = find_min_idx(top_nthreads_vector, &min_value, k0, k);
+        
+            for (j = start_idx[i] + top_n; j < start_idx[i+1]; j++) {
+                if (PE_score_vector[i] > min_value) {
+                    top_nthreads_vector[min_idx] = PE_score_vector[j];
+                    top_nthreads_pos[min_idx] = j;
+
+                    min_idx = find_min_idx(top_nthreads_vector, &min_value, k0, k);
+                }
+            }
+        }
+
+        printf("Done\n");
+        find_top_n(top_nthreads_vector, top_n_vector, top_n_pos, len_top_nt, 0, top_n);
+    
+        for (i = 0; i < top_n; i++) {
+            top_n_pos[i] = top_nthreads_pos[top_n_pos[i]];
+        }
+
+    }
+    else {
+        find_top_n(PE_score_vector, top_n_vector, top_n_pos, len_n, 0, top_n);
     }
 
+    printf("Sorting: \n");
+    permution_sort (top_n_vector, perm, 0, top_n);
+
+    printf("Sorted \n");
+    for(int k = top_n - 1; k >= 0; k--) {
+        int rank = top_n - k;
+        printf("Rank: %d, Site: %d, PE_score: %.10g\n", 
+                rank, top_n_pos[perm[k]], top_n_vector[perm[k]]);
+    }
+
+    free(top_nthreads_pos);
+    free(top_nthreads_vector);
     free(top_n_pos);
     free(top_n_vector);
     return;
 }
 
 
-int find_min_idx (double *score_vector, double *min_value, int len_n)
-{
-    int min_idx = 0;
-    *min_value = score_vector[0];
 
-    for (int i = 1; i < len_n; i++) {
+void find_top_n (double *score_vector, double *top_vector, int *top_pos,
+                 int len_n, int beg, int end)
+{
+    int find_min_idx (double *score_vector, double *min_value, int beg, int end);
+    
+    double min_value;
+    int min_idx;
+
+    for (int i = beg; i < end; i++) {
+        top_vector[i] = score_vector[i];
+        top_pos[i] = i;        
+    }
+    
+    min_idx = find_min_idx(top_vector, &min_value, beg, end);
+
+    for (int i = end; i < len_n; i++) {
+        if (score_vector[i] > min_value) {
+            top_vector[min_idx] = score_vector[i];
+            top_pos[min_idx] = i;
+
+            min_idx = find_min_idx(top_vector, &min_value, beg, end);
+        }
+    }
+} 
+
+
+int find_min_idx (double *score_vector, double *min_value, int beg, int end)
+{
+    int min_idx = beg;
+    *min_value = score_vector[beg];
+
+    for (int i = beg; i < end; i++) {
         if (score_vector[i] < *min_value) {
             min_idx = i;
             *min_value = score_vector[i];
@@ -246,4 +322,51 @@ int find_min_idx (double *score_vector, double *min_value, int len_n)
     }
 
     return min_idx;
+}
+
+
+void permution_sort (double *arr, int *perm, int beg, int end)
+{
+    void sort_perm (double *arr, int *perm, int beg, int end);
+    
+    // INIT PERM MATRIX
+    for (int i = beg; i < end; i++) {
+        perm[i] = i;
+    }
+
+    sort_perm(arr, perm, beg, end);
+}
+
+
+void sort_perm (double *arr, int *perm, int beg, int end)
+{
+    void swap (int *a, int *b);
+
+    if (end > beg + 1) {
+        double piv = arr[perm[beg]];
+        int l = beg + 1;
+        int r = end;
+
+
+        while (l < r) {
+            if (arr[perm[l]] <= piv) {
+                l++;
+            }
+            else {
+                swap(&perm[l], &perm[--r]);
+            }
+        }
+        
+        swap(&perm[--l], &perm[beg]);
+        sort_perm(arr, perm, beg, l);
+        sort_perm(arr, perm, r, end);
+    } 
+}
+
+
+void swap (int *a, int *b)
+{
+    int t = *a;
+    *a = *b;
+    *b = t;
 }
