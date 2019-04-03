@@ -6,6 +6,7 @@
 #include <omp.h>
 
 
+// See header file
 CRS read_graph_from_file (char *filename)
 {
     FILE *graph_file;
@@ -39,7 +40,7 @@ CRS read_graph_from_file (char *filename)
         link_count_row[i] = 0;
     }
     
-    // First run through file
+    // First run through file find number of inbound and outbound links
     while (fscanf(graph_file, "%d %d", &from_node_id, &to_node_id) == 2) {
         if (from_node_id != to_node_id) {
             link_count_col[from_node_id] += 1.0;
@@ -48,6 +49,7 @@ CRS read_graph_from_file (char *filename)
         }
     }
 
+    // Compressed row storage of matrix
     CRS crs = {
         .row_ptr = (int *) malloc ((node_count + 1) * sizeof(int)),
         .col_idx = (int *) malloc (edge_idx * sizeof(int)),
@@ -58,6 +60,8 @@ CRS read_graph_from_file (char *filename)
     };
 
     // tmp array with size max number possible for dangling
+    // find how many values in each row by its number of inbound links
+    // set row_ptr for that row to row_ptr for last row + number of inbound
     int *tmp_dangling = (int *) malloc (node_count * sizeof(int)); 
     for (int i = 1; i < crs.len_row_ptr; i++) {
         crs.row_ptr[i] = crs.row_ptr[i-1] + link_count_row[i-1];
@@ -68,20 +72,24 @@ CRS read_graph_from_file (char *filename)
         }
     }
 
+    // Set in the dangling sites
     crs.dangling = (int *) malloc (crs.len_dangling * sizeof(int));
     for (int k = 0; k < crs.len_dangling; k++) {
         crs.dangling[k] = tmp_dangling[k]; 
     }
 
+    // IF column index == -1 it's value has not be filled yet
     for (int j = 0; j < crs.len_val; j++) {
         crs.col_idx[j] = -1;
     } 
     
+    // Rewind file and skip header
     rewind(graph_file);
     for (int header_idx = 0; header_idx < FILE_HEADER_LINES; header_idx++) {
         fscanf(graph_file, "%*[^\n]\n");
     }
 
+    // Read in value array == 1/number of outbound from site,  with column indices
     while (fscanf(graph_file, "%d %d", &from_node_id, &to_node_id) == 2) {
         if (from_node_id != to_node_id) {
             for (int j = crs.row_ptr[to_node_id]; j < crs.row_ptr[to_node_id + 1]; j++) {
@@ -102,6 +110,7 @@ CRS read_graph_from_file (char *filename)
 }
  
 
+// See header file
 double * PageRank_iterations (CRS crs, double damping, int maxiter, double threshold)
 {
     int node_count = crs.len_row_ptr - 1;
@@ -153,6 +162,7 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
             inf_norm = 0.0;
         }
 
+        // Sparse matrix multiplication
         #pragma omp for reduction(max: inf_norm) schedule(dynamic, 1024)
         for (i = 0; i < node_count; i++) {
             xtmp = 0.0;
@@ -192,6 +202,7 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 }
 
 
+// See header file
 void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 {
     void permution_sort (double *score_vector, int *perm, int beg, int end);
@@ -206,8 +217,10 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 
     int *perm = (int *) malloc (len_n * sizeof(int));
 
+    // Sort the PE_score_vector by a parallel permutation algorithm 
     permution_sort (PE_score_vector, perm, 0, len_n);
 
+    // List out top n in a file
     for(int k = len_n - 1; k >= len_n - top_n; k--) {
         int rank = len_n - k;
         fprintf(output_file, "Rank: %7d, Site: %7d, PE_score: %.10g\n", 
@@ -220,49 +233,16 @@ void top_n_webpages (double *PE_score_vector, int len_n, int top_n)
 }
 
 
-
-void find_top_n (double *score_vector, double *top_vector, int *top_pos,
-                 int len_n, int beg, int end)
-{
-    int find_min_idx (double *score_vector, double *min_value, int beg, int end);
-    
-    double min_value;
-    int min_idx;
-
-    for (int i = beg; i < end; i++) {
-        top_vector[i] = score_vector[i];
-        top_pos[i] = i;        
-    }
-    
-    min_idx = find_min_idx(top_vector, &min_value, beg, end);
-
-    for (int i = end; i < len_n; i++) {
-        if (score_vector[i] > min_value) {
-            top_vector[min_idx] = score_vector[i];
-            top_pos[min_idx] = i;
-
-            min_idx = find_min_idx(top_vector, &min_value, beg, end);
-        }
-    }
-} 
-
-
-int find_min_idx (double *score_vector, double *min_value, int beg, int end)
-{
-    int min_idx = beg;
-    *min_value = score_vector[beg];
-
-    for (int i = beg; i < end; i++) {
-        if (score_vector[i] < *min_value) {
-            min_idx = i;
-            *min_value = score_vector[i];
-        }
-    }
-
-    return min_idx;
-}
-
-
+/** FUNCTION: permutation_sort
+ * --------------------------
+ *  A parallel quicksort algorithm on a permutation vector.
+ *
+ *  @param *arr: The vector to be sorted by.
+ *  @param *perm: The permutation vector to be sorted.
+ *  @param beg: The begining index to sort by. Usally equal 0 for the first.
+ *  @param end: The end index to sort by: Usally length of arr for the first.
+ *  @return Void
+ */
 void permution_sort (double *arr, int *perm, int beg, int end)
 {
     void sort_perm (double *arr, int *perm, int beg, int end);
@@ -273,6 +253,7 @@ void permution_sort (double *arr, int *perm, int beg, int end)
         perm[i] = i;
     }
 
+    // Begin sorting
     #pragma omp parallel
     {
     #pragma omp single nowait 
@@ -282,7 +263,15 @@ void permution_sort (double *arr, int *perm, int beg, int end)
     }
 }
 
-
+/** FUNCTION: sort_perm
+ * --------------------
+ *  Auxillary function for the permutation sort. Sorts in serial when the 
+ *  difference between the beginning and end index is lower than min_size.
+ *  Elsewise sorts the by a pivot and send the lower and higher values to
+ *  be sorted by diffirent threads.
+ *
+ *  For parameters see permutation sort.
+ */
 void sort_perm (double *arr, int *perm, int beg, int end)
 {
     void swap (int *a, int *b);
@@ -322,6 +311,14 @@ void sort_perm (double *arr, int *perm, int beg, int end)
 }
 
 
+/** FUNCTION: swap
+ * ---------------
+ *  Swaps two pointers. 
+ *
+ *  @param *a: Pointer to be swapped.
+ *  @param *b: Pointer to be swapped.
+ *  @return Void
+ */
 void swap (int *a, int *b)
 {
     int t = *a;

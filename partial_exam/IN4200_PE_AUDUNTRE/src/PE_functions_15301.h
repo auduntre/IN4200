@@ -65,7 +65,8 @@ double * PageRank_iterations (CRS crs, double damping, int maxiter, double thres
 /** FUNCTION: top_n_webpages
  * ------------------------- 
  *  Listing and writing the top n websites to the report/output.txt file.
- *  The PE_score_vector function will be sorted after running this function.
+ *  The PE_score_vector function will be sorted by a permutation vector using a 
+ *  parallel quick sort algorithm.
  *
  *  @param PE_score_vector: The score vector for webpages.
  *  @param len_n: The length of PE_score_vector.
