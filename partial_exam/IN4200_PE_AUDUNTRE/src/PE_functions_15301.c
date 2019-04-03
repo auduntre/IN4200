@@ -291,7 +291,9 @@ void sort_perm (double *arr, int *perm, int beg, int end)
                 swap(&perm[l], &perm[--r]);
             }
         }
-        
+     
+        // Sorting bigger and smaller than pivot sections by recursive calling
+        // this function for those parts   
         swap(&perm[--l], &perm[beg]);
         if (end - beg > min_size) {
             #pragma omp task 
