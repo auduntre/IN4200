@@ -32,6 +32,7 @@ CRS read_graph_from_file (char *filename)
         }
     }
     
+
     double *link_count_col = (double *) malloc (node_count * sizeof(double));
     int *link_count_row = (int *) malloc (node_count * sizeof(int));
 
@@ -48,6 +49,7 @@ CRS read_graph_from_file (char *filename)
             edge_idx++;
         }
     }
+
 
     // Compressed row storage of matrix
     CRS crs = {

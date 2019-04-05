@@ -9,7 +9,6 @@
 
 #define FILE_HEADER_LINES 4
 
-
 /** STRUCT: compressed_row_storage
  * -------------------------------
  *  The compressed row storage for a matrix containing the information between 
