@@ -1,5 +1,19 @@
-/* needed header files .... */
+/* Parallel Main */
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "functions.h"
+
 /* declarations of functions import_JPEG_file and export_JPEG_file */
+void import_JPEG_file (const char *filename, unsigned char **image_chars,
+                       int *image_height, int *image_width,
+                       int *num_components);
+
+void export_JPEG_file (const char *filename, const unsigned char *image_chars,
+                       int image_height, int image_width,
+                       int num_components, int quality);
+
+
 
 int main(int argc, char **argv)
 {
