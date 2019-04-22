@@ -7,6 +7,8 @@ CSRC = $(wildcard *.c)
 OBJS = $(CSRC:.c=.o)
 PROJ = serial_main
 
+
+# If compiling in parallel make sure it is in right order
 .NOTPARALLEL: all
 all: simple-jpeg $(PROJ)
 
