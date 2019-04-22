@@ -23,7 +23,7 @@ void allocate_image (image *u, int m, int n)
 
 void deallocate_image (image *u)
 {
-    for (int i = 0; i < u->m) {
+    for (int i = 0; i < u->m; i++) {
         free(u->image_data[i]);
     }
     free(u->image_data);
@@ -44,7 +44,7 @@ void convert_jpeg_to_image (const unsigned char *image_chars, image *u)
 
     for (int i = 0; i < u->m; i++) {
         for (int j = 0; j < u->n; j++) {
-            u->image_data[i, j] = (float) image_chars[imgc_idx++];
+            u->image_data[i][j] = (float) image_chars[imgc_idx++];
         }
     }
 }
@@ -56,7 +56,7 @@ void convert_image_to_jpeg (const image *u, unsigned char *image_chars)
 
     for (int i = 0; i < u->m; i++) {
         for (int j = 0; j < u->n; j++) {
-            image_chars[imgc_idx++] = (char) u->image_data[i, j]; 
+            image_chars[imgc_idx++] = (char) u->image_data[i][j]; 
         }
     }
 }
@@ -75,9 +75,9 @@ void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters)
         for (int i = 1; i < u_bar->m-1; i++) {
             for (int j = 1; j < u_bar->n-1; i++) {
                 // Smoothing procedure
-                u_bar->image_data[i, j] =  C * u->image_data[i, j] 
-                    + kappa * (u->image_data[i-1, j] + u->image_data[i, j-1] 
-                    + u->image_data[i, j+1] + u->image_data[i+1, j]);
+                u_bar->image_data[i][j] =  C * u->image_data[i][j] 
+                    + kappa * (u->image_data[i-1][j] + u->image_data[i][j-1] 
+                    + u->image_data[i][j+1] + u->image_data[i+1][j]);
             }
         }
         
