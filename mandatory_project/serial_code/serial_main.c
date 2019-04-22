@@ -17,12 +17,12 @@ void export_JPEG_file (const char *filename, const unsigned char *image_chars,
 int main(int argc, char **argv)
 {
     char *input_jpeg_filename, *output_jpeg_filename;
-    image u, u_bar;
-    
     unsigned char *image_chars;
     int m, n, c, iters;
     float kappa;
-        
+    
+    image u, u_bar; 
+
     /* read from command line: kappa, iters, input_jpeg_filename, output_jpeg_filename */
     if (argc < 5) {
         kappa = atof(argv[1]);
