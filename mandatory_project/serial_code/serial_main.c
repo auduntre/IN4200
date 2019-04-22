@@ -1,12 +1,12 @@
 /* Serial Main */
 
 #include <stdlib.h>
-#include <stdlib.h>
 #include <stdio.h>
 
 #include "functions.h"
 
 
+/* declarations of functions import_JPEG_file and export_JPEG_file */
 void import_JPEG_file (const char *filename, unsigned char **image_chars,
                        int *image_height, int *image_width,
                        int *num_components);
@@ -24,8 +24,7 @@ int main(int argc, char **argv)
     unsigned char *image_chars;
     int m, n, c, iters;
     float kappa;
-    
-    
+        
     /* read from command line: kappa, iters, input_jpeg_filename, output_jpeg_filename */
     if (argc < 5) {
         kappa = atof(argv[1]);
@@ -34,11 +33,10 @@ int main(int argc, char **argv)
         output_jpeg_filename = argv[4];
     }
     else {
-        printf("Error with arguments given at the command line\n");
+        printf("Too few command line arguments given.\n");
         exit(EXIT_FAILURE);
     }
 
-    
     import_JPEG_file(input_jpeg_filename, &image_chars, &m, &n, &c);
     
     allocate_image (&u, m, n);
