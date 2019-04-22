@@ -40,7 +40,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
-    if (my_rank==0) {
+    if (my_rank == 0) {
         import_JPEG_file(input_jpeg_filename, &image_chars, &m, &n, &c);
         allocate_image (&whole_image, m, n);
     }
@@ -49,8 +49,12 @@ int main(int argc, char **argv)
     MPI_Bcast (&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
    
     /* 2D decomposition of the m x n pixels evenly among the MPI processes */
-    my_m = ...;
-    my_n = ...;
+    my_m = m / num_procs;
+    my_n = n / num_procs;
+
+    // Dividing out reminders among processes
+    if (my_rank < m % num_procs) my_m++;
+    if (my_rank < n % num_procs) my_n++;
   
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
@@ -67,7 +71,7 @@ int main(int argc, char **argv)
     /* copy them into the designated region of struct whole_image */
     /* ... */
  
-    if (my_rank==0) {
+    if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
         deallocate_image (&whole_image);
