@@ -14,7 +14,6 @@ void export_JPEG_file (const char *filename, const unsigned char *image_chars,
                        int num_components, int quality);
 
 
-
 int main(int argc, char **argv)
 {
     char *input_jpeg_filename, *output_jpeg_filename;
@@ -29,9 +28,17 @@ int main(int argc, char **argv)
     MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size (MPI_COMM_WORLD, &num_procs);
     
-    /* read from command line: kappa, iters, input_jpeg_filename, output_jpeg_file
-    name */
-    /* ... */
+    /* read from command line: kappa, iters, input_jpeg_filename, output_jpeg_filename */
+    if (argc >= 5) {
+        kappa = atof(argv[1]);
+        iters = atoi(argv[2]);
+        input_jpeg_filename = argv[3];
+        output_jpeg_filename = argv[4];
+    }
+    else {
+        printf("Too few command line arguments given.\n");
+        exit(EXIT_FAILURE);
+    }
     
     if (my_rank==0) {
         import_JPEG_file(input_jpeg_filename, &image_chars, &m, &n, &c);
