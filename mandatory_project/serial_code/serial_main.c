@@ -5,7 +5,6 @@
 
 #include "functions.h"
 
-
 /* declarations of functions import_JPEG_file and export_JPEG_file */
 void import_JPEG_file (const char *filename, unsigned char **image_chars,
                        int *image_height, int *image_width,
