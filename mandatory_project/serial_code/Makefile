@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O2
+CFLAGS = -O3
 LDFLAGS = -L../simple-jpeg/ -lsimplejpeg
 
 DEPS = $(wildcard *.h)
