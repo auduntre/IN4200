@@ -7,14 +7,24 @@
 
 void allocate_image (image *u, int m, int n)
 {
-    printf("IN HERE\n");
-    return;
+    u->m = m;
+    u->n = n;
+
+    u->image_data = (float **) malloc (u->m * sizeof(float *));
+
+    for (int i = 0; i < u->m; i++) {
+        u->image_data[i] = (float *) malloc(u->n * sizeof(float));
+    }
 }
 
 
 void deallocate_image (image *u)
 {
-    return;
+    for (int i = 0; i < u->m) {
+        free(u->image_data[i]);
+    }
+
+    free(u->image_data);
 }
 
 
