@@ -1,6 +1,7 @@
 /* Parallel Main */
 #include <stdlib.h>
 #include <stdio.h>
+#include <mpi.h>
 
 #include "functions.h"
 
@@ -28,6 +29,7 @@ int main(int argc, char **argv)
     MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size (MPI_COMM_WORLD, &num_procs);
     
+
     /* read from command line: kappa, iters, input_jpeg_filename, output_jpeg_filename */
     if (argc >= 5) {
         kappa = atof(argv[1]);
@@ -50,18 +52,39 @@ int main(int argc, char **argv)
    
     /* 2D decomposition of the m x n pixels evenly among the MPI processes */
     my_m = m / num_procs;
-    my_n = n / num_procs;
+    my_n = n;
 
     // Dividing out reminders among processes
-    if (my_rank < m % num_procs) my_m++;
-    if (my_rank < n % num_procs) my_n++;
+    if (my_rank < m % num_procs) {
+        my_m++;
+    }
   
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
   
     /* each process asks process 0 for a partitioned region */
     /* of image_chars and copy the values into u */
-    /* ... */
+    int partition_sizes[num_procs];
+    int displacements[num_procs];
+    int reminder = m % num_procs;
+
+    displacements[0] = 0;
+    for (int i = 0; i < num_procs; i++) {
+        partition_sizes[i] = m / num_procs;
+        
+        if (reminder > 0) {
+            partition_sizes[i] += 1;
+            reminder--;
+        }
+
+        partition_sizes[i] *= n;
+        if (i < num_procs-1) {
+            displacements[i+1] = displacements[i] + partition_sizes[i];
+        }
+    } 
+ 
+    MPI_Scatterv (image_chars, partition_sizes, displacements, MPI_CHAR,
+                  my_image_chars, my_m*my_n, MPI_CHAR, 0, MPI_COMM_WORLD); 
   
     convert_jpeg_to_image (my_image_chars, &u);
     iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
@@ -69,7 +92,9 @@ int main(int argc, char **argv)
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
-    /* ... */
+    MPI_Gatherv (u_bar.image_data_storage, u_bar.m*u_bar.n, MPI_FLOAT,
+                 whole_image.image_data_storage, partition_sizes, 
+                 displacements, MPI_FLOAT, 0, MPI_COMM_WORLD);
  
     if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);

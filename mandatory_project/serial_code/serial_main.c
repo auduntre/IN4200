@@ -1,6 +1,7 @@
 /* Serial Main */
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "functions.h"
 
@@ -44,9 +45,14 @@ int main(int argc, char **argv)
 
     convert_jpeg_to_image (image_chars, &u);
     printf("JPEG -> 2D array successfull\n");
-
-    iso_diffusion_denoising (&u, &u_bar, kappa, iters); 
-    printf("Denoising succcessfull\n"); 
+   
+    clock_t start = clock(); 
+    iso_diffusion_denoising (&u, &u_bar, kappa, iters);
+    clock_t end = clock();
+    printf("Denoising succcessfull\n");
+    
+    double elapsed = (double) (end - start) / CLOCKS_PER_SEC;
+    printf("Time taken for denoising: %.4g seconds.\n", elapsed);
 
     convert_image_to_jpeg (&u_bar, image_chars);
     printf("2D array -> JPEG successfull\n");

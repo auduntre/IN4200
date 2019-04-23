@@ -15,17 +15,25 @@ void allocate_image (image *u, int m, int n)
     u->n = n;
 
     u->image_data = (float **) malloc (u->m * sizeof(float *));
+    u->image_data_storage = (float *) malloc (u->m * u->n * sizeof(float));
+
     for (int i = 0; i < u->m; i++) {
-        u->image_data[i] = (float *) malloc(u->n * sizeof(float));
+        u->image_data[i] = &(u->image_data_storage[i*u->n]);
+        
+        // Without underlaying storage:
+        //u->image_data[i] = (float *) malloc(u->n * sizeof(float));
     }
 }
 
 
 void deallocate_image (image *u)
 {
-    for (int i = 0; i < u->m; i++) {
+    // Without underlaying storage: 
+    /* for (int i = 0; i < u->m; i++) {
         free(u->image_data[i]);
-    }
+    } */
+
+    free(u->image_data_storage);
     free(u->image_data);
 }
 
@@ -80,8 +88,8 @@ void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters)
         }
     }
 
-    // Denoising iters number of times  
-    while (iteration <= iters) {                
+    // Denoising iters number of times
+    while (iteration <= iters) {
         swap_images(u, u_bar);
 
         for (int i = 1; i < u_bar->m-1; i++) {
@@ -91,8 +99,7 @@ void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters)
                     + kappa * (u->image_data[i-1][j] + u->image_data[i][j-1] 
                     + u->image_data[i][j+1] + u->image_data[i+1][j]);
             }
-        }
-        
+        }    
         iteration++;
     }
 }

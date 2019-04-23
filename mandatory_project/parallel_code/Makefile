@@ -1,9 +1,14 @@
 CC = mpicc
-CFLAGS = -O3
-LDFLAGS = -L../simple-jpeg/ -lsimplejpeg -I../serial_code
+IDIR = ../serial_code
 
+CFLAGS = -O3 -std=c99
+LDFLAGS = -L../simple-jpeg -lsimplejpeg -I$(IDIR)
+
+_DEPS = functions.h
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 CSRC = $(wildcard *.c)
 OBJS = $(CSRC:.c=.o)
+OBJS += $(DEPS:.h=.o)
 PROJ = parallel_main
 
 
@@ -12,10 +17,16 @@ PROJ = parallel_main
 all: simple-jpeg $(PROJ)
 
 %.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
+		$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
-serial_main: $(OBJS) $(DEPS)
+$(IDIR)%.o: %.c $(DEPS)
+		$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
+
+parallel_main: $(OBJS)
 		$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+simple-jpeg:
+		$(MAKE) -C ../simple-jpeg
 
 
 obj-clean:

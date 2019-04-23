@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -O3
-LDFLAGS = -L../simple-jpeg/ -lsimplejpeg
+CFLAGS = -O3 -std=c99
+LDFLAGS = -L../simple-jpeg -lsimplejpeg
 
 DEPS = $(wildcard *.h)
 CSRC = $(wildcard *.c)
@@ -16,7 +16,7 @@ all: simple-jpeg $(PROJ)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 		
 
-serial_main: $(OBJS) $(DEPS)
+serial_main: $(OBJS)
 		$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 simple-jpeg:
