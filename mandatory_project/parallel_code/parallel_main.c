@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <mpi.h>
 
+#include "parallel_functions.h"
 #include "functions.h"
 
 /* declarations of functions import_JPEG_file and export_JPEG_file */

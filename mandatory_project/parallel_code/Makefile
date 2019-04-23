@@ -6,9 +6,12 @@ LDFLAGS = -L../simple-jpeg -lsimplejpeg -I$(IDIR)
 
 _DEPS = functions.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+DEPS += parallel_functions.h
+
 CSRC = $(wildcard *.c)
 OBJS = $(CSRC:.c=.o)
 OBJS += $(DEPS:.h=.o)
+
 PROJ = parallel_main
 
 
