@@ -14,7 +14,6 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa, int 
         exit(EXIT_FAILURE);
     }
 
-
     // First u_bar is copy of u
     for (int i = 0; i < u_bar->m; i++) {
         for (int j = 0; j < u_bar->n; j++) {

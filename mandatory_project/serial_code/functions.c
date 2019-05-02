@@ -5,6 +5,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "functions.h"
 
@@ -15,13 +16,13 @@ void allocate_image (image *u, int m, int n)
     u->n = n;
 
     u->image_data = (float **) malloc (u->m * sizeof(float *));
-    u->image_data_storage = (float *) malloc (u->m * u->n * sizeof(float));
+    //u->image_data_storage = (float *) malloc (u->m * u->n * sizeof(float));
 
     for (int i = 0; i < u->m; i++) {
-        u->image_data[i] = &(u->image_data_storage[i*u->n]);
+        //u->image_data[i] = &(u->image_data_storage[i*u->n]);
         
         // Without underlaying storage:
-        //u->image_data[i] = (float *) malloc(u->n * sizeof(float));
+        u->image_data[i] = (float *) malloc(u->n * sizeof(float));
     }
 }
 
@@ -29,11 +30,11 @@ void allocate_image (image *u, int m, int n)
 void deallocate_image (image *u)
 {
     // Without underlaying storage: 
-    /* for (int i = 0; i < u->m; i++) {
+    for (int i = 0; i < u->m; i++) {
         free(u->image_data[i]);
-    } */
+    }
 
-    free(u->image_data_storage);
+    //free(u->image_data_storage);
     free(u->image_data);
 }
 
@@ -80,14 +81,13 @@ void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters)
         exit(EXIT_FAILURE);
     }
 
-
     // First u_bar is copy of u
     for (int i = 0; i < u_bar->m; i++) {
         for (int j = 0; j < u_bar->n; j++) {
             u_bar->image_data[i][j] = u->image_data[i][j];
         }
     }
-
+    
     // Denoising iters number of times
     while (iteration <= iters) {
         swap_images(u, u_bar);

@@ -55,11 +55,6 @@ int main(int argc, char **argv)
     my_m = m / num_procs;
     my_n = n;
 
-    // Dividing out reminders among processes
-    if (my_rank < m % num_procs) {
-        my_m++;
-    }
-  
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
     printf("Allocation done\n");
@@ -71,23 +66,36 @@ int main(int argc, char **argv)
     int reminder = m % num_procs;
 
     displacements[0] = 0;
+    
     for (int i = 0; i < num_procs; i++) {
-        partition_sizes[i] = m / num_procs;
+        partition_sizes[i] = n * m / num_procs - 1;
         
         if (reminder > 0) {
             partition_sizes[i] += 1;
             reminder--;
         }
 
-        partition_sizes[i] *= n;
         if (i < num_procs-1) {
             displacements[i+1] = displacements[i] + partition_sizes[i];
         }
     }
-    printf("part and displ done\n"); 
- 
-    MPI_Scatterv (image_chars, partition_sizes, displacements, MPI_CHAR,
-                  my_image_chars, my_m*my_n, MPI_CHAR, 0, MPI_COMM_WORLD); 
+    printf("Part and displ done\n"); 
+
+    printf("Dimension MxN = %d x %d = %d\n", m, n, m*n);
+    
+    for (int i = 0; i < num_procs; i++) {
+        printf("MY_RANK %d: partition_sizes[%d] = %d\n", my_rank, i, partition_sizes[i]);
+        printf("MY_RANK %d: displacements[%d] = %d\n", my_rank, i, displacements[i]);
+    }
+
+    if (my_rank < m % num_procs) {
+        MPI_Scatterv (image_chars, partition_sizes, displacements, MPI_CHAR,
+                      my_image_chars, my_m*my_n + 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    }
+    else {
+        MPI_Scatterv (image_chars, partition_sizes, displacements, MPI_CHAR,
+                      my_image_chars, my_m*my_n, MPI_CHAR, 0, MPI_COMM_WORLD);
+    } 
     printf("Scattering done\n");
 
     convert_jpeg_to_image (my_image_chars, &u);
