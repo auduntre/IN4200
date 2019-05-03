@@ -30,7 +30,6 @@ int main(int argc, char **argv)
     MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size (MPI_COMM_WORLD, &num_procs);
     
-
     /* read from command line: kappa, iters, input_jpeg_filename, output_jpeg_filename */
     if (argc >= 5) {
         kappa = atof(argv[1]);
