@@ -42,17 +42,47 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
+    /*------------ Creating cartesian grid ---------------*/
+    MPI_Comm GRID_COMM_WORLD;
+    int dims[2] = {0, 0};
+    int periods[2] = {0, 0};
+    int my_coords[2];
+    
+    MPI_Dims_create(num_procs, 2, dims); // division of processors in grid
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &GRID_COMM_WORLD);
+    
+    // Killing surplus processes
+    if (GRID_COMM_WORLD == MPI_COMM_NULL) {
+        MPI_Finalize();
+        exit(EXIT_SUCCESS);
+    }
+    
+    MPI_Comm_rank (GRID_COMM_WORLD, &my_rank);
+    MPI_Comm_size (GRID_COMM_WORLD, &num_procs);
+    MPI_Cart_coords(GRID_COMM_WORLD, my_rank, 2, my_coords); 
+
+    if (my_rank == 0) {
+        printf("Number of MPI-processes in the grid is set to %d\n", num_procs);
+        printf("Rows of processes = %d\n", dims[0]);
+        printf("Columns of processes = %d\n", dims[1]);
+    }
+    /*-------------------------------------------------------*/
+    
     if (my_rank == 0) {
         import_JPEG_file(input_jpeg_filename, &image_chars, &m, &n, &c);
         allocate_image (&whole_image, m, n);
     }
    
-    MPI_Bcast (&m, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast (&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
-   
-    /* 2D decomposition of the m x n pixels evenly among the MPI processes */
-    my_m = m / num_procs;
-    my_n = n;
+    MPI_Bcast (&m, 1, MPI_INT, 0, GRID_COMM_WORLD);
+    MPI_Bcast (&n, 1, MPI_INT, 0, GRID_COMM_WORLD);
+    
+    /* 2D decomposition of the m x n pixels evenly among the MPI processes */ 
+    my_m = m / dims[0];
+    my_n = n / dims[1];
+
+    // Divind out reminders
+    if (my_coords[0] < m % dims[0]) my_m += 1;
+    if (my_coords[1] < n % dims[1]) my_n += 1;
 
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
@@ -60,42 +90,6 @@ int main(int argc, char **argv)
 
     /* each process asks process 0 for a partitioned region */
     /* of image_chars and copy the values into u */
-    int partition_sizes[num_procs];
-    int displacements[num_procs];
-    int reminder = m % num_procs;
-
-    displacements[0] = 0;
-    
-    for (int i = 0; i < num_procs; i++) {
-        partition_sizes[i] = n * m / num_procs - 1;
-        
-        if (reminder > 0) {
-            partition_sizes[i] += 1;
-            reminder--;
-        }
-
-        if (i < num_procs-1) {
-            displacements[i+1] = displacements[i] + partition_sizes[i];
-        }
-    }
-    printf("Part and displ done\n"); 
-
-    printf("Dimension MxN = %d x %d = %d\n", m, n, m*n);
-    
-    for (int i = 0; i < num_procs; i++) {
-        printf("MY_RANK %d: partition_sizes[%d] = %d\n", my_rank, i, partition_sizes[i]);
-        printf("MY_RANK %d: displacements[%d] = %d\n", my_rank, i, displacements[i]);
-    }
-
-    if (my_rank < m % num_procs) {
-        MPI_Scatterv (image_chars, partition_sizes, displacements, MPI_CHAR,
-                      my_image_chars, my_m*my_n + 1, MPI_CHAR, 0, MPI_COMM_WORLD);
-    }
-    else {
-        MPI_Scatterv (image_chars, partition_sizes, displacements, MPI_CHAR,
-                      my_image_chars, my_m*my_n, MPI_CHAR, 0, MPI_COMM_WORLD);
-    } 
-    printf("Scattering done\n");
 
     convert_jpeg_to_image (my_image_chars, &u);
     printf("Local jpeg -> image done\n");
@@ -105,10 +99,7 @@ int main(int argc, char **argv)
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
-    MPI_Gatherv (u_bar.image_data_storage, u_bar.m*u_bar.n, MPI_FLOAT,
-                 whole_image.image_data_storage, partition_sizes, 
-                 displacements, MPI_FLOAT, 0, MPI_COMM_WORLD);
- 
+    
     if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
