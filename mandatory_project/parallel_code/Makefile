@@ -1,7 +1,7 @@
 CC = mpicc
 IDIR = ../serial_code
 
-CFLAGS = -O3 -std=c99
+CFLAGS = -O2 -std=c99
 LDFLAGS = -L../simple-jpeg -lsimplejpeg -I$(IDIR)
 
 _DEPS = functions.h

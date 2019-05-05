@@ -70,7 +70,10 @@ int main(int argc, char **argv)
     
     if (my_rank == 0) {
         import_JPEG_file(input_jpeg_filename, &image_chars, &m, &n, &c);
+        printf("Import of JPEG successfull\n");
+        
         allocate_image (&whole_image, m, n);
+        printf("Allocation of image array successfull\n");
     }
    
     MPI_Bcast (&m, 1, MPI_INT, 0, GRID_COMM_WORLD);
@@ -86,28 +89,33 @@ int main(int argc, char **argv)
 
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
-    printf("Allocation done\n");
+    printf("Allocation of local array successfull\n");
 
     /* each process asks process 0 for a partitioned region */
     /* of image_chars and copy the values into u */
 
-    convert_jpeg_to_image (my_image_chars, &u);
-    printf("Local jpeg -> image done\n");
-    iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
-    printf("Computation done \n");
+    //convert_jpeg_to_image (my_image_chars, &u);
+    //printf("Local jpeg -> image done\n");
+    //iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
+    //printf("Computation done \n");
 
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
     
+ 
     if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
+        printf("Export of JPEG successfull\n");
+        
         deallocate_image (&whole_image);
+        printf("Deallocation of image array successfull\n");
     }
  
     deallocate_image (&u);
     deallocate_image (&u_bar);
+    printf("Deallocation of local array successfull\n");
 
     MPI_Finalize (); 
     return 0;
