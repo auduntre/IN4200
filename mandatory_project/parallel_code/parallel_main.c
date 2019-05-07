@@ -89,7 +89,6 @@ int main(int argc, char **argv)
 
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
-    printf("Allocation of local array successfull\n");
 
     int info_recv[num_procs][5];
     int info_send[5] = {my_rank, my_coords[0], my_coords[1], my_m, my_n};
@@ -114,16 +113,12 @@ int main(int argc, char **argv)
         y++;
     }
     
+    /* each process asks process 0 for a partitioned region */
+    /* of image_chars and copy the values into u */
     MPI_Status my_status;
     MPI_Request my_request;
     
     if (my_rank == 0) {
-        for (int i = 0; i < num_procs; i++) {
-            printf("RANK = %d, X = %d, Y = %d, m = %d, n = %d\n", 
-                   info_recv[i][0], info_recv[i][1], info_recv[i][2], 
-                   info_recv[i][3], info_recv[i][4]);
-        }
-
         int block_rank = 0;
         x = 1;
         
@@ -149,21 +144,49 @@ int main(int argc, char **argv)
     for (int i = 0; i < my_m; i++) {
         MPI_Recv (&(my_image_chars[i * my_n]), my_n, MPI_CHAR, 0, tag, 
                   GRID_COMM_WORLD, &my_status);
-        //printf("recvied\n");
         tag++;
     }
-        
-    /* each process asks process 0 for a partitioned region */
-    /* of image_chars and copy the values into u */
+    
+    convert_jpeg_to_image (my_image_chars, &u);
 
-    //convert_jpeg_to_image (my_image_chars, &u);
-    //printf("Local jpeg -> image done\n");
-    //iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
-    //printf("Computation done \n");
+    double start = MPI_Wtime ();
+    iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
+    MPI_Barrier (GRID_COMM_WORLD);
+    double end = MPI_Wtime ();
+
 
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
+    tag = cumla_m[my_coords[0]]; 
+    
+    for (int i = 0; i < my_m; i++) {
+        MPI_Isend (u_bar.image_data[i], my_n, MPI_FLOAT, 0, tag, 
+                   GRID_COMM_WORLD, &my_request);
+        tag++;
+    }
+    
+    if (my_rank == 0) {
+        printf("Time taken for denoising: %f\n", end - start);
+        
+        int block_rank = 0;
+        x = 1;
+        
+        for (int i = 0; i < m; i++) {
+            y = 0;
+            
+            for (int k = block_rank; k < block_rank + dims[1]; k++) {
+                MPI_Recv (&(whole_image.image_data[i][cumla_n[y]]), info_recv[k][4],
+                           MPI_FLOAT, k, i, GRID_COMM_WORLD, &my_status);
+                y++;
+            }
+
+            if (i + 1 >= cumla_m[x]) {
+                block_rank += dims[1];
+                x++;
+            }
+        }
+    }
     
     if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);
