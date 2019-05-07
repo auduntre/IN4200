@@ -48,8 +48,8 @@ int main(int argc, char **argv)
     int my_coords[2];
     
     MPI_Comm GRID_COMM_WORLD;
-    MPI_Dims_create(num_procs, 2, dims); // division of processors in grid
-    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &GRID_COMM_WORLD);
+    MPI_Dims_create (num_procs, 2, dims); // division of processors in grid
+    MPI_Cart_create (MPI_COMM_WORLD, 2, dims, periods, 1, &GRID_COMM_WORLD);
     
     // Killing surplus processes
     if (GRID_COMM_WORLD == MPI_COMM_NULL) {
@@ -93,23 +93,69 @@ int main(int argc, char **argv)
 
     int info_recv[num_procs][5];
     int info_send[5] = {my_rank, my_coords[0], my_coords[1], my_m, my_n};
-    MPI_Gather(info_send, 5, MPI_INT, info_recv, 5, MPI_INT, 0, GRID_COMM_WORLD); 
+    
+    MPI_Allgather (info_send, 5, MPI_INT, info_recv, 5, MPI_INT, GRID_COMM_WORLD); 
 
+    int cumla_m[dims[0]];
+    int cumla_n[dims[1]];
+    int x = 1;
+    int y = 1;
+    
+    cumla_m[0] = 0;
+    cumla_n[0] = 0;
+
+    for (int i = 0; i < num_procs; i += dims[1]) {
+        cumla_m[x] = cumla_m[x-1] + info_recv[i][3];
+        x++;
+    }
+
+    for (int j = 0; j < num_procs; j += dims[0]) {
+        cumla_n[y] = cumla_n[y-1] + info_recv[j][4];
+        y++;
+    }
+    
+    MPI_Status my_status;
+    MPI_Request my_request;
+    
     if (my_rank == 0) {
         for (int i = 0; i < num_procs; i++) {
             printf("RANK = %d, X = %d, Y = %d, m = %d, n = %d\n", 
-                info_recv[i][0], info_recv[i][1], info_recv[i][2], info_recv[i][3],
-                info_recv[i][4]);
+                   info_recv[i][0], info_recv[i][1], info_recv[i][2], 
+                   info_recv[i][3], info_recv[i][4]);
         }
+
+        int block_rank = 0;
+        x = 1;
+        
+        for (int i = 0; i < m; i++) {
+            y = 0;
+            
+            for (int k = block_rank; k < block_rank + dims[1]; k++) {
+                MPI_Isend (&(image_chars[i * n + cumla_n[y]]), info_recv[k][4],
+                           MPI_CHAR, k, i, GRID_COMM_WORLD, &my_request);
+                y++;
+            }
+
+            if (i + 1 >= cumla_m[x]) {
+                block_rank += dims[1];
+                x++;
+            }
+        }
+    }
+    
+    int tag = cumla_m[my_coords[0]]; 
+    my_image_chars = (char *) malloc (my_m * my_n * sizeof(char));
+    
+    for (int i = 0; i < my_m; i++) {
+        MPI_Recv (&(my_image_chars[i * my_n]), my_n, MPI_CHAR, 0, tag, 
+                  GRID_COMM_WORLD, &my_status);
+        //printf("recvied\n");
+        tag++;
     }
         
     /* each process asks process 0 for a partitioned region */
-    /* of image_chars and copy the values into u */ 
-    int small_n = n;
-    int big_n = small_n + 1;
+    /* of image_chars and copy the values into u */
 
-    for (int i = 0; i < m; i++) { 
-    }
     //convert_jpeg_to_image (my_image_chars, &u);
     //printf("Local jpeg -> image done\n");
     //iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
@@ -119,7 +165,6 @@ int main(int argc, char **argv)
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
     
- 
     if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
@@ -128,10 +173,10 @@ int main(int argc, char **argv)
         deallocate_image (&whole_image);
         printf("Deallocation of image array successfull\n");
     }
- 
+    
+    free(my_image_chars); 
     deallocate_image (&u);
     deallocate_image (&u_bar);
-    printf("Deallocation of local array successfull\n");
 
     MPI_Finalize (); 
     return 0;
