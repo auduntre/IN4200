@@ -42,12 +42,12 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
-    /*------------ Creating cartesian grid ---------------*/
-    MPI_Comm GRID_COMM_WORLD;
+    /*------------ CREATING CARTESIAN GRID ---------------*/
     int dims[2] = {0, 0};
     int periods[2] = {0, 0};
     int my_coords[2];
     
+    MPI_Comm GRID_COMM_WORLD;
     MPI_Dims_create(num_procs, 2, dims); // division of processors in grid
     MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &GRID_COMM_WORLD);
     
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     
     MPI_Comm_rank (GRID_COMM_WORLD, &my_rank);
     MPI_Comm_size (GRID_COMM_WORLD, &num_procs);
-    MPI_Cart_coords(GRID_COMM_WORLD, my_rank, 2, my_coords); 
+    MPI_Cart_coords (GRID_COMM_WORLD, my_rank, 2, my_coords); 
 
     if (my_rank == 0) {
         printf("Number of MPI-processes in the grid is set to %d\n", num_procs);
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     my_m = m / dims[0];
     my_n = n / dims[1];
 
-    // Divind out reminders
+    // Divide out reminders
     if (my_coords[0] < m % dims[0]) my_m += 1;
     if (my_coords[1] < n % dims[1]) my_n += 1;
 
@@ -91,9 +91,25 @@ int main(int argc, char **argv)
     allocate_image (&u_bar, my_m, my_n);
     printf("Allocation of local array successfull\n");
 
-    /* each process asks process 0 for a partitioned region */
-    /* of image_chars and copy the values into u */
+    int info_recv[num_procs][5];
+    int info_send[5] = {my_rank, my_coords[0], my_coords[1], my_m, my_n};
+    MPI_Gather(info_send, 5, MPI_INT, info_recv, 5, MPI_INT, 0, GRID_COMM_WORLD); 
 
+    if (my_rank == 0) {
+        for (int i = 0; i < num_procs; i++) {
+            printf("RANK = %d, X = %d, Y = %d, m = %d, n = %d\n", 
+                info_recv[i][0], info_recv[i][1], info_recv[i][2], info_recv[i][3],
+                info_recv[i][4]);
+        }
+    }
+        
+    /* each process asks process 0 for a partitioned region */
+    /* of image_chars and copy the values into u */ 
+    int small_n = n;
+    int big_n = small_n + 1;
+
+    for (int i = 0; i < m; i++) { 
+    }
     //convert_jpeg_to_image (my_image_chars, &u);
     //printf("Local jpeg -> image done\n");
     //iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
