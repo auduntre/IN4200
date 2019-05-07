@@ -49,6 +49,7 @@ int main(int argc, char **argv)
     clock_t start = clock(); 
     iso_diffusion_denoising (&u, &u_bar, kappa, iters);
     clock_t end = clock();
+
     printf("Denoising succcessfull\n");
     
     double elapsed = (double) (end - start) / CLOCKS_PER_SEC;

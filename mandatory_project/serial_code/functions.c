@@ -87,8 +87,7 @@ void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters)
             u_bar->image_data[i][j] = u->image_data[i][j];
         }
     }
-    
-    // Denoising iters number of times
+
     while (iteration <= iters) {
         swap_images(u, u_bar);
 
@@ -99,7 +98,8 @@ void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters)
                     + kappa * (u->image_data[i-1][j] + u->image_data[i][j-1] 
                     + u->image_data[i][j+1] + u->image_data[i+1][j]);
             }
-        }    
+        }
+        
         iteration++;
     }
 }
