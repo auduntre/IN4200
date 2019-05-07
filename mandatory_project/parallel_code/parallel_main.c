@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 
     double start = MPI_Wtime ();
     iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
-    MPI_Barrier (GRID_COMM_WORLD);
+    MPI_Barrier(GRID_COMM_WORLD);
     double end = MPI_Wtime ();
 
 
