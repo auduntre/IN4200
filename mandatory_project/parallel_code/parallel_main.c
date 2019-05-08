@@ -96,11 +96,9 @@ int main(int argc, char **argv)
     MPI_Barrier (MPI_COMM_WORLD);
     double end = MPI_Wtime();
 
-
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
-    
     
     if (my_rank == 0) {
         printf("Time taken for denoising: %f\n", end - start);
