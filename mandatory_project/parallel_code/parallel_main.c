@@ -106,6 +106,7 @@ int main(int argc, char **argv)
     
     MPI_Allgather (info_send, 5, MPI_INT, info_recv_storage, 5, MPI_INT, GRID_COMM_WORLD); 
     
+    //free(info_send);
     MPI_Barrier (GRID_COMM_WORLD);
 
     int *cumla_m = (int *) malloc (dims[0] * sizeof(int));
@@ -185,24 +186,16 @@ int main(int argc, char **argv)
     MPI_Type_create_resized (my_vec, 0, sizeof(char), &my_vec);
     MPI_Type_commit (&my_vec);
 
-    for (int i = 0; i < dims[1]; i++) {
-        printf("send_n[%d] = %d, cumla_n[%d] = %d\n", i, send_n[i], i, cumla_n[i]);
-    }
-
     my_image_chars = (char *) malloc (my_m * my_n * sizeof(char));
     MPI_Scatterv (row_image_chars, send_n, cumla_n, vec, my_image_chars,
                   my_n, my_vec, 0, COL_COMM);
 
-    printf("Second scatter done, rank: %d\n", my_rank); 
-
-    free(row_image_chars);
 
     convert_jpeg_to_image (my_image_chars, &u);
 
     double start = MPI_Wtime ();
     iso_diffusion_denoising_parallel(&u, &u_bar, kappa, iters);
     MPI_Barrier (GRID_COMM_WORLD);
-    printf("Denoising finished\n");
     double end = MPI_Wtime ();
 
 
@@ -238,6 +231,7 @@ int main(int argc, char **argv)
             }
         }
     }
+
     
     if (my_rank == 0) {
         convert_image_to_jpeg(&whole_image, image_chars);
@@ -248,15 +242,18 @@ int main(int argc, char **argv)
         printf("Deallocation of image array successfull\n");
     }
 
-    free(info_recv_storage);
     free(info_recv);
-    free(info_send);
+    free(info_recv_storage);
 
+    free(row_image_chars);
     free(my_image_chars);
+    
     free(cumla_mn);
     free(cumla_nm);
+    
     free(cumla_m);
     free(cumla_n);
+    
     free(send_m);
     free(send_n);
 
