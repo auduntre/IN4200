@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3
+CFLAGS = -O2
 
 PROJ = libsimplejpeg.a
 OBJS = $(shell ls *.c | sed "s/\.c/\.o/")
