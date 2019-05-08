@@ -111,16 +111,13 @@ int main(int argc, char **argv)
 
     int *cumla_m = (int *) malloc (dims[0] * sizeof(int));
     int *cumla_n = (int *) malloc (dims[1] * sizeof(int));
-    
     int *cumla_mn = (int *) malloc (dims[0] * sizeof(int));
-    int *cumla_nm = (int *) malloc (dims[1] * sizeof(int));
 
     int *send_m = (int *) malloc (dims[0] * sizeof(int));
     int *send_n = (int *) malloc (dims[1] * sizeof(int));
     int x = 1;
     int y = 1;
 
-    cumla_nm[0] = 0;
     cumla_mn[0] = 0;
     cumla_m[0] = 0;
     cumla_n[0] = 0;
@@ -137,9 +134,8 @@ int main(int argc, char **argv)
         x++;
     }
 
-    for (int j = 0; j < num_procs; j += dims[0]) {
+    for (int j = 0; j < dims[1]; j++) {
         send_n[jdx] = info_recv[j][4];
-        //cumla_nm[y] = cumla_nm[y-1] + send_n[y] * m;
         cumla_n[jdx] = cumla_n[jdx-1] + info_recv[j][4];
         
         jdx++;
@@ -169,7 +165,8 @@ int main(int argc, char **argv)
     MPI_Comm_size (COL_COMM, &col_size);
 
     char *row_image_chars;
-    row_image_chars = (char *) malloc (my_m * n * sizeof(char));
+    row_image_chars = (char *) calloc (my_m * n, sizeof(char));
+                       //malloc (my_m * n * sizeof(char));
 
     if (my_coords[1] == 0) {
         MPI_Scatterv (image_chars, send_m, cumla_mn, MPI_CHAR, row_image_chars,
@@ -190,6 +187,7 @@ int main(int argc, char **argv)
     MPI_Scatterv (row_image_chars, send_n, cumla_n, vec, my_image_chars,
                   my_n, my_vec, 0, COL_COMM);
 
+    MPI_Barrier (GRID_COMM_WORLD);
 
     convert_jpeg_to_image (my_image_chars, &u);
 
@@ -238,7 +236,7 @@ int main(int argc, char **argv)
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
         printf("Export of JPEG successfull\n");
         
-        deallocate_image (&whole_image);
+        //deallocate_image (&whole_image);
         printf("Deallocation of image array successfull\n");
     }
 
@@ -249,16 +247,14 @@ int main(int argc, char **argv)
     free(my_image_chars);
     
     free(cumla_mn);
-    free(cumla_nm);
-    
     free(cumla_m);
     free(cumla_n);
     
     free(send_m);
     free(send_n);
 
-    deallocate_image(&u);
-    deallocate_image(&u_bar);
+    //deallocate_image(&u);
+    //deallocate_image(&u_bar);
 
     MPI_Finalize (); 
     return 0;
