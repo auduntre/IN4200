@@ -65,13 +65,11 @@ int main(int argc, char **argv)
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
     
-    /* each process asks process 0 for a partitioned region */
-    /* of image_chars and copy the values into u */
     int send_counts[num_procs];
     int displacements[num_procs];
 
     displacements[0] = 0;
-
+    
     for (int i = 0; i < num_procs-1; i++) {
         send_counts[i] = (m / num_procs) * n;
         if (i < m % num_procs) {
@@ -80,16 +78,19 @@ int main(int argc, char **argv)
         
         displacements[i+1] = displacements[i] + send_counts[i]; 
     }
-
-    send_counts[num_procs-1] = m / num_procs;
-
+    
+    send_counts[num_procs-1] = (m / num_procs) * n;
+    
     my_image_chars = (char *) malloc (my_m * my_n * sizeof(char));
 
+    /* each process asks process 0 for a partitioned region */
+    /* of image_chars and copy the values into u */
     MPI_Scatterv (image_chars, send_counts, displacements, MPI_CHAR, 
-                  my_image_chars, my_m * my_n, MPI_CHAR, 0, MPI_COMM_WORLD);
-
+                  my_image_chars, my_m*my_n, MPI_CHAR, 0, MPI_COMM_WORLD);
+    
     convert_jpeg_to_image(my_image_chars, &u);
 
+    /* Each process denoising each's segment. */
     MPI_Barrier (MPI_COMM_WORLD);
     double start = MPI_Wtime();
     iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
@@ -99,7 +100,10 @@ int main(int argc, char **argv)
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
-    
+    MPI_Gatherv (u_bar.image_data_storage, my_m*my_n, MPI_FLOAT,
+                 whole_image.image_data_storage, send_counts, displacements,
+                 MPI_FLOAT, 0, MPI_COMM_WORLD);
+
     if (my_rank == 0) {
         printf("Time taken for denoising: %f\n", end - start);
 
