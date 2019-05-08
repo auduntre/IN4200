@@ -90,26 +90,58 @@ int main(int argc, char **argv)
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
 
-    int info_recv[num_procs][5];
-    int info_send[5] = {my_rank, my_coords[0], my_coords[1], my_m, my_n};
-    
-    MPI_Allgather (info_send, 5, MPI_INT, info_recv, 5, MPI_INT, GRID_COMM_WORLD); 
+    int **info_recv = (int **) malloc (num_procs * sizeof(int *));
+    int *info_recv_storage = (int *) malloc (5 * num_procs * sizeof(int));
 
-    int cumla_m[dims[0]];
-    int cumla_n[dims[1]];
+    for (int k = 0; k < num_procs; k++) {
+        info_recv[k] = &(info_recv_storage[5*k]);
+    }
+
+    int *info_send = (int *) malloc (5 * sizeof(int));
+    info_send[0] = my_rank; 
+    info_send[1] = my_coords[0];
+    info_send[2] = my_coords[1];
+    info_send[3] = my_m;
+    info_send[4] = my_n;
+    
+    MPI_Allgather (info_send, 5, MPI_INT, info_recv_storage, 5, MPI_INT, GRID_COMM_WORLD); 
+    
+    MPI_Barrier (GRID_COMM_WORLD);
+
+    int *cumla_m = (int *) malloc (dims[0] * sizeof(int));
+    int *cumla_n = (int *) malloc (dims[1] * sizeof(int));
+    
+    int *cumla_mn = (int *) malloc (dims[0] * sizeof(int));
+    int *cumla_nm = (int *) malloc (dims[1] * sizeof(int));
+
+    int *send_m = (int *) malloc (dims[0] * sizeof(int));
+    int *send_n = (int *) malloc (dims[1] * sizeof(int));
     int x = 1;
     int y = 1;
-    
+
+    cumla_nm[0] = 0;
+    cumla_mn[0] = 0;
     cumla_m[0] = 0;
     cumla_n[0] = 0;
+    
+    int idx = 0;
+    int jdx = 0;
 
     for (int i = 0; i < num_procs; i += dims[1]) {
+        send_m[idx] = info_recv[i][3] * n;
+        cumla_mn[idx+1] = cumla_mn[idx] + send_m[idx];
         cumla_m[x] = cumla_m[x-1] + info_recv[i][3];
+        
+        idx++;
         x++;
     }
 
     for (int j = 0; j < num_procs; j += dims[0]) {
-        cumla_n[y] = cumla_n[y-1] + info_recv[j][4];
+        send_n[jdx] = info_recv[j][4];
+        //cumla_nm[y] = cumla_nm[y-1] + send_n[y] * m;
+        cumla_n[jdx] = cumla_n[jdx-1] + info_recv[j][4];
+        
+        jdx++;
         y++;
     }
     
@@ -117,49 +149,67 @@ int main(int argc, char **argv)
     /* of image_chars and copy the values into u */
     MPI_Status my_status;
     MPI_Request my_request;
-    
-    if (my_rank == 0) {
-        int block_rank = 0;
-        x = 1;
-        
-        for (int i = 0; i < m; i++) {
-            y = 0;
-            
-            for (int k = block_rank; k < block_rank + dims[1]; k++) {
-                MPI_Isend (&(image_chars[i * n + cumla_n[y]]), info_recv[k][4],
-                           MPI_CHAR, k, i, GRID_COMM_WORLD, &my_request);
-                y++;
-            }
+   
+    MPI_Comm ROW_COMM;
+    MPI_Comm COL_COMM;
 
-            if (i + 1 >= cumla_m[x]) {
-                block_rank += dims[1];
-                x++;
-            }
-        }
+    int keep_row[2] = {1, 0};
+    int keep_col[2] = {0, 1};
+    int my_row_rank, row_size;
+    int my_col_rank, col_size;
+
+    MPI_Cart_sub (GRID_COMM_WORLD, keep_row, &ROW_COMM);
+    MPI_Cart_sub (GRID_COMM_WORLD, keep_col, &COL_COMM);
+
+    MPI_Comm_rank (ROW_COMM, &my_row_rank);
+    MPI_Comm_rank (COL_COMM, &my_col_rank);
+
+    MPI_Comm_size (ROW_COMM, &row_size);
+    MPI_Comm_size (COL_COMM, &col_size);
+
+    char *row_image_chars;
+    row_image_chars = (char *) malloc (my_m * n * sizeof(char));
+
+    if (my_coords[1] == 0) {
+        MPI_Scatterv (image_chars, send_m, cumla_mn, MPI_CHAR, row_image_chars,
+                      my_m * n, MPI_CHAR, 0, ROW_COMM);
     }
-    
-    int tag = cumla_m[my_coords[0]]; 
+
+    MPI_Datatype vec, my_vec;
+
+    MPI_Type_vector (my_m, 1, n, MPI_CHAR, &vec);
+    MPI_Type_create_resized (vec, 0, sizeof(char), &vec);
+    MPI_Type_commit (&vec);
+
+    MPI_Type_vector (my_m, 1, my_n, MPI_CHAR, &my_vec); 
+    MPI_Type_create_resized (my_vec, 0, sizeof(char), &my_vec);
+    MPI_Type_commit (&my_vec);
+
+    for (int i = 0; i < dims[1]; i++) {
+        printf("send_n[%d] = %d, cumla_n[%d] = %d\n", i, send_n[i], i, cumla_n[i]);
+    }
+
     my_image_chars = (char *) malloc (my_m * my_n * sizeof(char));
-    
-    for (int i = 0; i < my_m; i++) {
-        MPI_Recv (&(my_image_chars[i * my_n]), my_n, MPI_CHAR, 0, tag, 
-                  GRID_COMM_WORLD, &my_status);
-        tag++;
-    }
-    
+    MPI_Scatterv (row_image_chars, send_n, cumla_n, vec, my_image_chars,
+                  my_n, my_vec, 0, COL_COMM);
+
+    printf("Second scatter done, rank: %d\n", my_rank); 
+
+    free(row_image_chars);
+
     convert_jpeg_to_image (my_image_chars, &u);
 
-    MPI_Barrier(GRID_COMM_WORLD);
     double start = MPI_Wtime ();
-    iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
-    MPI_Barrier(GRID_COMM_WORLD);
+    iso_diffusion_denoising_parallel(&u, &u_bar, kappa, iters);
+    MPI_Barrier (GRID_COMM_WORLD);
+    printf("Denoising finished\n");
     double end = MPI_Wtime ();
 
 
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
-    tag = cumla_m[my_coords[0]]; 
+    int tag = cumla_m[my_coords[0]]; 
     
     for (int i = 0; i < my_m; i++) {
         MPI_Isend (u_bar.image_data[i], my_n, MPI_FLOAT, 0, tag, 
@@ -197,10 +247,21 @@ int main(int argc, char **argv)
         deallocate_image (&whole_image);
         printf("Deallocation of image array successfull\n");
     }
-    
-    free(my_image_chars); 
-    deallocate_image (&u);
-    deallocate_image (&u_bar);
+
+    free(info_recv_storage);
+    free(info_recv);
+    free(info_send);
+
+    free(my_image_chars);
+    free(cumla_mn);
+    free(cumla_nm);
+    free(cumla_m);
+    free(cumla_n);
+    free(send_m);
+    free(send_n);
+
+    deallocate_image(&u);
+    deallocate_image(&u_bar);
 
     MPI_Finalize (); 
     return 0;
