@@ -4,8 +4,10 @@
 
 #include "parallel_functions.h"
 
-void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa, int iters)
+void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
+                                       int iters, MPI_Comm CART_COMM)
 {
+
     int iteration = 1;
     float C = (1 - 4*kappa);
 

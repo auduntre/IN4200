@@ -146,13 +146,13 @@ int main(int argc, char **argv)
                   GRID_COMM_WORLD, &my_status);
         tag++;
     }
-    
-    convert_jpeg_to_image (my_image_chars, &u);
 
     MPI_Barrier(GRID_COMM_WORLD);
+
+    convert_jpeg_to_image (my_image_chars, &u);
+
     double start = MPI_Wtime ();
-    iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters);
-    MPI_Barrier(GRID_COMM_WORLD);
+    iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters, GRID_COMM_WORLD);
     double end = MPI_Wtime ();
 
 
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
             
             for (int k = block_rank; k < block_rank + dims[1]; k++) {
                 MPI_Recv (&(whole_image.image_data[i][cumla_n[y]]), info_recv[k][4],
-                           MPI_FLOAT, k, i, GRID_COMM_WORLD, &my_status);
+                          MPI_FLOAT, k, i, GRID_COMM_WORLD, &my_status);
                 y++;
             }
 
@@ -187,9 +187,11 @@ int main(int argc, char **argv)
                 x++;
             }
         }
+
     }
     
     if (my_rank == 0) {
+        MPI_Wait (&my_request, MPI_STATUS_IGNORE);
         convert_image_to_jpeg(&whole_image, image_chars);
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
         printf("Export of JPEG successfull\n");
