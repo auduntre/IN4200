@@ -147,12 +147,13 @@ int main(int argc, char **argv)
         tag++;
     }
 
-    MPI_Barrier(GRID_COMM_WORLD);
 
     convert_jpeg_to_image (my_image_chars, &u);
 
+    MPI_Barrier(GRID_COMM_WORLD);
     double start = MPI_Wtime ();
     iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters, GRID_COMM_WORLD);
+    MPI_Barrier(GRID_COMM_WORLD);
     double end = MPI_Wtime ();
 
 
@@ -187,7 +188,6 @@ int main(int argc, char **argv)
                 x++;
             }
         }
-
     }
     
     if (my_rank == 0) {
