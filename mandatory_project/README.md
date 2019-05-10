@@ -1,7 +1,7 @@
 ### Compiling
 
 To compile the serial and the parallel program simple tpye `make -jN`,
-where N is the number of threads wanted to utilize.
+where N is the number of threads wanted to be utilized.
 
 
 ### Running
