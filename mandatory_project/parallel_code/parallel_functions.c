@@ -13,6 +13,8 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
     int direction[2] = {0, 1};
     
     float C = (1 - 4*kappa);
+    
+    // Buffers to send and recv amongst neightbors 
     float *upbuf = (float *) malloc (u_bar->n * sizeof(float));
     float *downbuf = (float *) malloc (u_bar->n * sizeof(float));
     float *leftbuf = (float *) malloc (u_bar->m * sizeof(float));
@@ -51,6 +53,7 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
     while (iteration <= iters) {
         swap_images(u, u_bar);
         
+        /* ----- Sending and recv from neighboors buffers to update borders ---- */
         if (down != MPI_PROC_NULL) {
             MPI_Isend (u->image_data[M], u->n, MPI_FLOAT, down, 0, 
                        CART_COMM, &my_request);
@@ -58,17 +61,20 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
         
         if (up != MPI_PROC_NULL) {
             MPI_Recv (upbuf, u->n, MPI_FLOAT, up, 0, CART_COMM, &my_status);
-
+            
+            // Border update
             for (int j = 1; j < N; j++) {
                 u_bar->image_data[0][j] =  C * u->image_data[0][j] 
                     + kappa * (upbuf[j] + u->image_data[0][j-1] 
                     + u->image_data[0][j+1] + u->image_data[1][j]);
             } 
         }
+        /*----------------------------------------------------------*/
 
         leftbuf[0] = u->image_data[0][0];
         rightbuf[0] = u->image_data[0][N];
 
+        // Main smoothing procedure
         for (int i = 1; i < M; i++) {
             leftbuf[i] = u->image_data[i][0];
 
@@ -85,6 +91,7 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
         leftbuf[M] = u->image_data[M][0];
         rightbuf[M] = u->image_data[M][N];
 
+        /* ----- Sending and recv from neightboors buffers to update borders ---- */
         if (up != MPI_PROC_NULL) {
             MPI_Isend (u->image_data[0], u->n, MPI_FLOAT, up, 1, 
                        CART_COMM, &my_request);
@@ -94,6 +101,7 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
             MPI_Recv (downbuf, u->n, MPI_FLOAT, down, 1, CART_COMM, 
                       &my_status);
 
+            // Border update
             for (int j = 1; j < N; j++) {
                 u_bar->image_data[M][j] =  C * u->image_data[M][j] 
                     + kappa * (u->image_data[M-1][j] 
@@ -114,6 +122,7 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
             MPI_Recv (recvbuf, u->m, MPI_FLOAT, right, 2, CART_COMM, 
                       &my_status);
 
+            // Border update
             for (int i = 1; i < M; i++) {
                 u_bar->image_data[i][N] =  C * u->image_data[i][N] 
                     + kappa * (u->image_data[i-1][N] 
@@ -126,6 +135,7 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
             MPI_Recv (recvbuf, u->m, MPI_FLOAT, left, 3, CART_COMM, 
                       &my_status);
             
+            // Border update
             for (int i = 1; i < M; i++) {
                 u_bar->image_data[i][0] =  C * u->image_data[i][0] 
                     + kappa * (u->image_data[i-1][0] 
@@ -133,8 +143,9 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
                     + u->image_data[i+1][0]);
             }
         }
+        /*----------------------------------------------------------*/
 
-        // Corners
+        // Corner update
         u_bar->image_data[0][0] = C * u->image_data[0][0]
             + kappa * (upbuf[0] + leftbuf[0] + u->image_data[0][1]
             + u->image_data[1][0]);

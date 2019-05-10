@@ -90,6 +90,7 @@ int main(int argc, char **argv)
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
 
+    // Process info
     int **info_recv = (int **) malloc (num_procs * sizeof(int*));
     int *info_recv_storage = (int *) malloc (5 * num_procs * sizeof(int));
     int *info_send = (int *) malloc (5 * sizeof(int));
@@ -104,6 +105,7 @@ int main(int argc, char **argv)
         info_recv[l] = &(info_recv_storage[5*l]);
     }
 
+    // Info about each procces sent to each other
     MPI_Allgather (info_send, 5, MPI_INT, info_recv[0], 5, MPI_INT, GRID_COMM_WORLD); 
     
     int *cumla_m = (int *) malloc (dims[0] * sizeof(int));
@@ -114,11 +116,13 @@ int main(int argc, char **argv)
     cumla_m[0] = 0;
     cumla_n[0] = 0;
 
+    // Cumlative number of rows in the blocks
     for (int i = 0; i < num_procs; i += dims[1]) {
         cumla_m[x] = cumla_m[x-1] + info_recv[i][3];
         x++;
     }
 
+    // Cumlative number of columns in the blocks
     for (int j = 0; j < num_procs; j += dims[0]) {
         cumla_n[y] = cumla_n[y-1] + info_recv[j][4];
         y++;
@@ -131,7 +135,8 @@ int main(int argc, char **argv)
     MPI_Datatype col_tmp, col_vec;
     
     int count, block_length, start_point;
-    
+   
+    // Sending parts of the image_chars to each process
     if (my_rank == 0) {
         for (int k = 0; k < num_procs; k++) {
             count = info_recv[k][3];
@@ -139,6 +144,7 @@ int main(int argc, char **argv)
             start_point = cumla_m[info_recv[k][1]] * n 
                         + cumla_n[info_recv[k][2]];
 
+            // "Column" striding the image_chars array
             MPI_Type_vector (count, block_length, n, MPI_CHAR, &col_tmp);
             MPI_Type_commit (&col_tmp);
             MPI_Type_create_resized (col_tmp, 0, block_length*sizeof(char), &col_vec);
@@ -158,6 +164,7 @@ int main(int argc, char **argv)
 
     convert_jpeg_to_image (my_image_chars, &u);
 
+    // The parallel diffusion
     MPI_Barrier(GRID_COMM_WORLD);
     double start = MPI_Wtime ();
     iso_diffusion_denoising_parallel (&u, &u_bar, kappa, iters, GRID_COMM_WORLD);
@@ -170,6 +177,7 @@ int main(int argc, char **argv)
     MPI_Isend (u_bar.image_data[0], my_m*my_n, MPI_FLOAT, 0, my_rank,
                GRID_COMM_WORLD, &my_request);
     
+    // Recving and putting in right place each block
     if (my_rank == 0) {
         MPI_Datatype sub_array;
 
@@ -179,6 +187,7 @@ int main(int argc, char **argv)
             start_point = cumla_m[info_recv[k][1]] * n 
                         + cumla_n[info_recv[k][2]];
 
+            // Column striding the image_data array
             MPI_Type_vector (count, block_length, n, MPI_FLOAT, &col_tmp);
             MPI_Type_commit (&col_tmp);
             MPI_Type_create_resized (col_tmp, 0, block_length*sizeof(float), &col_vec);
@@ -192,6 +201,7 @@ int main(int argc, char **argv)
         }
     }
 
+    // Wait to all done
     MPI_Wait(&my_request, MPI_STATUS_IGNORE);
     MPI_Barrier (GRID_COMM_WORLD);
     
