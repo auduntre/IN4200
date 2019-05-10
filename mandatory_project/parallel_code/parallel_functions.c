@@ -17,7 +17,8 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
     float *downbuf = (float *) malloc (u_bar->n * sizeof(float));
     float *leftbuf = (float *) malloc (u_bar->m * sizeof(float));
     float *rightbuf = (float *) malloc (u_bar->m * sizeof(float));
-    
+    float *recvbuf = (float *) malloc (u_bar->m * sizeof(float));
+
     MPI_Status my_status;
     MPI_Request my_request;
     MPI_Comm_rank (CART_COMM, &my_rank);
@@ -110,25 +111,25 @@ void iso_diffusion_denoising_parallel (image *u, image *u_bar, float kappa,
             MPI_Isend (rightbuf, u->m, MPI_FLOAT, right, 3, CART_COMM,
                        &my_request);
 
-            MPI_Recv (rightbuf, u->m, MPI_FLOAT, right, 2, CART_COMM, 
+            MPI_Recv (recvbuf, u->m, MPI_FLOAT, right, 2, CART_COMM, 
                       &my_status);
 
             for (int i = 1; i < M; i++) {
                 u_bar->image_data[i][N] =  C * u->image_data[i][N] 
                     + kappa * (u->image_data[i-1][N] 
-                    + u->image_data[i][N-1] + rightbuf[i] 
+                    + u->image_data[i][N-1] + recvbuf[i] 
                     + u->image_data[i+1][N]);
             }
         }
 
         if (left != MPI_PROC_NULL) {
-            MPI_Recv (leftbuf, u->m, MPI_FLOAT, left, 3, CART_COMM, 
+            MPI_Recv (recvbuf, u->m, MPI_FLOAT, left, 3, CART_COMM, 
                       &my_status);
             
             for (int i = 1; i < M; i++) {
                 u_bar->image_data[i][0] =  C * u->image_data[i][0] 
                     + kappa * (u->image_data[i-1][0] 
-                    + leftbuf[i] + u->image_data[i][1] 
+                    + recvbuf[i] + u->image_data[i][1] 
                     + u->image_data[i+1][0]);
             }
         }

@@ -90,13 +90,24 @@ int main(int argc, char **argv)
     allocate_image (&u, my_m, my_n);
     allocate_image (&u_bar, my_m, my_n);
 
-    int info_recv[num_procs][5];
-    int info_send[5] = {my_rank, my_coords[0], my_coords[1], my_m, my_n};
+    int **info_recv = (int **) malloc (num_procs * sizeof(int*));
+    int *info_recv_storage = (int *) malloc (5 * num_procs * sizeof(int));
+    int *info_send = (int *) malloc (5 * sizeof(int));
     
-    MPI_Allgather (info_send, 5, MPI_INT, info_recv, 5, MPI_INT, GRID_COMM_WORLD); 
+    info_send[0] = my_rank;
+    info_send[1] = my_coords[0];
+    info_send[2] = my_coords[1];
+    info_send[3] = my_m; 
+    info_send[4] = my_n;
 
-    int cumla_m[dims[0]];
-    int cumla_n[dims[1]];
+    for (int l = 0; l < num_procs; l++) {
+        info_recv[l] = &(info_recv_storage[5*l]);
+    }
+
+    MPI_Allgather (info_send, 5, MPI_INT, info_recv[0], 5, MPI_INT, GRID_COMM_WORLD); 
+    
+    int *cumla_m = (int *) malloc (dims[0] * sizeof(int));
+    int *cumla_n = (int *) malloc (dims[1] * sizeof(int));
     int x = 1;
     int y = 1;
     
@@ -117,36 +128,33 @@ int main(int argc, char **argv)
     /* of image_chars and copy the values into u */
     MPI_Status my_status;
     MPI_Request my_request;
+    MPI_Datatype col_tmp, col_vec;
+    
+    int count, block_length, start_point;
     
     if (my_rank == 0) {
-        int block_rank = 0;
-        x = 1;
-        
-        for (int i = 0; i < m; i++) {
-            y = 0;
-            
-            for (int k = block_rank; k < block_rank + dims[1]; k++) {
-                MPI_Isend (&(image_chars[i * n + cumla_n[y]]), info_recv[k][4],
-                           MPI_CHAR, k, i, GRID_COMM_WORLD, &my_request);
-                y++;
-            }
+        for (int k = 0; k < num_procs; k++) {
+            count = info_recv[k][3];
+            block_length = info_recv[k][4];
+            start_point = cumla_m[info_recv[k][1]] * n 
+                        + cumla_n[info_recv[k][2]];
 
-            if (i + 1 >= cumla_m[x]) {
-                block_rank += dims[1];
-                x++;
-            }
+            MPI_Type_vector (count, block_length, n, MPI_CHAR, &col_tmp);
+            MPI_Type_commit (&col_tmp);
+            MPI_Type_create_resized (col_tmp, 0, block_length*sizeof(char), &col_vec);
+            MPI_Type_commit (&col_vec);
+
+            MPI_Isend (&(image_chars[start_point]), 1, col_vec, k, k,
+                       GRID_COMM_WORLD, &my_request);
+            MPI_Type_free(&col_tmp);
+            MPI_Type_free(&col_vec);
         }
     }
     
-    int tag = cumla_m[my_coords[0]]; 
     my_image_chars = (char *) malloc (my_m * my_n * sizeof(char));
     
-    for (int i = 0; i < my_m; i++) {
-        MPI_Recv (&(my_image_chars[i * my_n]), my_n, MPI_CHAR, 0, tag, 
-                  GRID_COMM_WORLD, &my_status);
-        tag++;
-    }
-
+    MPI_Recv (my_image_chars, my_m * my_n, MPI_CHAR, 0, my_rank, 
+              GRID_COMM_WORLD, &my_status);
 
     convert_jpeg_to_image (my_image_chars, &u);
 
@@ -156,42 +164,39 @@ int main(int argc, char **argv)
     MPI_Barrier(GRID_COMM_WORLD);
     double end = MPI_Wtime ();
 
-
     /* each process sends its resulting content of u_bar to process 0 */
     /* process 0 receives from each process incoming values and */
     /* copy them into the designated region of struct whole_image */
-    tag = cumla_m[my_coords[0]]; 
-    
-    for (int i = 0; i < my_m; i++) {
-        MPI_Isend (u_bar.image_data[i], my_n, MPI_FLOAT, 0, tag, 
-                   GRID_COMM_WORLD, &my_request);
-        tag++;
-    }
+    MPI_Isend (u_bar.image_data[0], my_m*my_n, MPI_FLOAT, 0, my_rank,
+               GRID_COMM_WORLD, &my_request);
     
     if (my_rank == 0) {
-        printf("Time taken for denoising: %f\n", end - start);
-        
-        int block_rank = 0;
-        x = 1;
-        
-        for (int i = 0; i < m; i++) {
-            y = 0;
-            
-            for (int k = block_rank; k < block_rank + dims[1]; k++) {
-                MPI_Recv (&(whole_image.image_data[i][cumla_n[y]]), info_recv[k][4],
-                          MPI_FLOAT, k, i, GRID_COMM_WORLD, &my_status);
-                y++;
-            }
+        MPI_Datatype sub_array;
 
-            if (i + 1 >= cumla_m[x]) {
-                block_rank += dims[1];
-                x++;
-            }
+        for (int k = 0; k < num_procs; k++) {
+            count = info_recv[k][3];
+            block_length = info_recv[k][4];
+            start_point = cumla_m[info_recv[k][1]] * n 
+                        + cumla_n[info_recv[k][2]];
+
+            MPI_Type_vector (count, block_length, n, MPI_FLOAT, &col_tmp);
+            MPI_Type_commit (&col_tmp);
+            MPI_Type_create_resized (col_tmp, 0, block_length*sizeof(float), &col_vec);
+            MPI_Type_commit (&col_vec);
+            
+            MPI_Recv (&(whole_image.image_data_storage[start_point]), 1, 
+                       col_vec, k, k, GRID_COMM_WORLD, &my_status);
+            
+            MPI_Type_free(&col_tmp);
+            MPI_Type_free(&col_vec);
         }
     }
+
+    MPI_Wait(&my_request, MPI_STATUS_IGNORE);
+    MPI_Barrier (GRID_COMM_WORLD);
     
     if (my_rank == 0) {
-        MPI_Wait (&my_request, MPI_STATUS_IGNORE);
+        printf("Time for denoising %f sec\n", end - start);
         convert_image_to_jpeg(&whole_image, image_chars);
         export_JPEG_file(output_jpeg_filename, image_chars, m, n, c, 75);
         printf("Export of JPEG successfull\n");
@@ -200,7 +205,16 @@ int main(int argc, char **argv)
         printf("Deallocation of image array successfull\n");
     }
     
+    MPI_Barrier (GRID_COMM_WORLD);
+   
+    free(info_send);
+    free(info_recv);
+    free(info_recv_storage);
+
     free(my_image_chars); 
+    free(cumla_m);
+    free(cumla_n);
+    
     deallocate_image (&u);
     deallocate_image (&u_bar);
 
