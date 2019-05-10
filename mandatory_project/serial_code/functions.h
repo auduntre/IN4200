@@ -3,7 +3,7 @@
 
 typedef struct
 {
-    float *image_data_storage;
+    float *image_data_storage;  /* underlaying 1D storage */
     float **image_data;         /* a 2D array of floats */
     int m;                      /* # pixels in vertical-direction */
     int n;                      /* # pixels in horizontal-direction */
@@ -35,12 +35,52 @@ void allocate_image (image *u, int m, int n);
  */
 void deallocate_image (image *u);
 
+
+/** FUNCTION swap_images
+ * ---------------------
+ * Swap two image pointers.
+ *
+ * parameters:
+ *   - image *u: Pointer to image to be swapped.
+ *   - image *v: Pointer to image to be swapped.
+ */
 void swap_images (image *u, image *v);
 
-void convert_jpeg_to_image (const unsigned char* image_chars, image *u);
 
+/** FUNCTION convert_jpeg_to_image
+ * ---------------------.---------
+ * Converts an 1D char array of a picture to a 2D float array in 
+ * an image struct.  
+ *
+ * parameters:
+ *   - char *image_chars: Pointer to 1D char array of picture. 
+ *   - image *u:          Pointer to image to contain 2D float array.
+ */
+void convert_jpeg_to_image (const unsigned char *image_chars, image *u);
+
+
+/** FUNCTION convert_jpeg_to_image
+ * ------------------------------
+ * Converts a 2D float array in an image struct to an 1D char array.
+ *
+ * parameters:
+ *   - char *image_chars: Pointer to 1D char array of picture. 
+ *   - image *u:          Pointer to image containig 2D float array.
+ */
 void convert_image_to_jpeg (const image *u, unsigned char* image_chars);
 
+
+/** FUNCTION iso_diffusion_denoising
+ * ---------------------------------
+ * Isotropic diffusion denoising of an image.
+ *
+ * parameters:
+ *   - image *u:     Pointer struct of picture to be denoised
+ *   - image *u_bar: Pointer to updated image for each iteration. The final denoised
+ *                   picture is in this struct image_data array.
+ *   - float kappa:  Constant values used in the Denoising.
+ *   - int iters:    Number of iterations.  
+ */
 void iso_diffusion_denoising (image *u, image *u_bar, float kappa, int iters);
 
 #endif
