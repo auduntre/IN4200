@@ -1,2 +1,2 @@
 # IN4200
-High-Performance Computing and Numerical Projects
+High-Performance Computing and Numerical Projects.
